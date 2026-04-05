@@ -53,9 +53,10 @@ export default function ClientCard() {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [isVip, setIsVip] = useState(false);
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const loadClient = () => {
     fetch(`/api/clients/${clientId}`)
       .then((r) => r.json())
       .then((data) => {
@@ -63,7 +64,9 @@ export default function ClientCard() {
         setNotes(data.notes || "");
         setIsVip(data.is_vip);
       });
-  }, [clientId]);
+  };
+
+  useEffect(loadClient, [clientId]);
 
   const saveNotes = async () => {
     await fetch(`/api/clients/${clientId}`, {
@@ -84,6 +87,21 @@ export default function ClientCard() {
     });
     setIsVip(newVip);
     setClient((c) => (c ? { ...c, is_vip: newVip } : c));
+  };
+
+  const changeBookingStatus = async (bookingId: number, status: string) => {
+    await fetch(`/api/bookings/${bookingId}/status?status=${status}`, { method: "PUT" });
+    loadClient();
+  };
+
+  const deleteBooking = async (bookingId: number) => {
+    await fetch(`/api/admin/booking/${bookingId}`, { method: "DELETE" });
+    loadClient();
+  };
+
+  const deleteClient = async () => {
+    await fetch(`/api/admin/client/${clientId}`, { method: "DELETE" });
+    navigate("/clients");
   };
 
   if (!client) return <div className="hint">Загрузка...</div>;
@@ -206,26 +224,62 @@ export default function ClientCard() {
         )}
 
         {client.bookings.map((b) => (
-          <div key={b.id} className="booking-item">
-            <div style={{ minWidth: 36, textAlign: "center", fontSize: 18 }}>
-              {statusEmoji[b.status] || "❓"}
-            </div>
-            <div className="booking-item__info">
-              <div className="booking-item__name">{b.service_name}</div>
-              <div className="booking-item__service">
-                {new Date(b.date).toLocaleDateString("ru-RU", {
-                  day: "numeric",
-                  month: "short",
-                  weekday: "short",
-                })}{" "}
-                &bull; {b.time_start}–{b.time_end}
+          <div key={b.id} style={{ borderBottom: "1px solid var(--tg-theme-secondary-bg-color)", paddingBottom: 12, marginBottom: 12 }}>
+            <div className="booking-item" style={{ borderBottom: "none", paddingBottom: 0 }}>
+              <div style={{ minWidth: 36, textAlign: "center", fontSize: 18 }}>
+                {statusEmoji[b.status] || "❓"}
+              </div>
+              <div className="booking-item__info">
+                <div className="booking-item__name">{b.service_name}</div>
+                <div className="booking-item__service">
+                  {new Date(b.date).toLocaleDateString("ru-RU", {
+                    day: "numeric",
+                    month: "short",
+                    weekday: "short",
+                  })}{" "}
+                  &bull; {b.time_start}–{b.time_end}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{b.price.toLocaleString()}₽</div>
+                <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)" }}>
+                  {statusLabel[b.status]}
+                </div>
               </div>
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{b.price.toLocaleString()}₽</div>
-              <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)" }}>
-                {statusLabel[b.status]}
-              </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 6, marginTop: 8, marginLeft: 36, flexWrap: "wrap" }}>
+              {b.status === "pending" && (
+                <>
+                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "confirmed")}>
+                    Подтвердить
+                  </button>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "cancelled")}>
+                    Отклонить
+                  </button>
+                </>
+              )}
+              {b.status === "confirmed" && (
+                <>
+                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "completed")}>
+                    Завершить
+                  </button>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "no_show")}>
+                    No-show
+                  </button>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "cancelled")}>
+                    Отменить
+                  </button>
+                </>
+              )}
+              <button
+                className="filter-chip"
+                style={{ fontSize: 11, padding: "4px 10px", color: "var(--danger)" }}
+                onClick={() => deleteBooking(b.id)}
+              >
+                Удалить
+              </button>
             </div>
           </div>
         ))}
@@ -261,10 +315,46 @@ export default function ClientCard() {
         </motion.div>
       )}
 
+      {/* Delete client */}
+      <motion.div
+        className="dashboard-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        style={{ marginTop: 16 }}
+      >
+        {!confirmDeleteClient ? (
+          <button
+            className="btn btn--danger"
+            onClick={() => setConfirmDeleteClient(true)}
+          >
+            Удалить клиента
+          </button>
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 14, marginBottom: 12, color: "var(--danger)" }}>
+              Удалить клиента и все его записи? Это нельзя отменить.
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => setConfirmDeleteClient(false)}>
+                Отмена
+              </button>
+              <button
+                className="btn btn--primary"
+                style={{ flex: 1, background: "var(--danger)" }}
+                onClick={deleteClient}
+              >
+                Да, удалить
+              </button>
+            </div>
+          </div>
+        )}
+      </motion.div>
+
       {/* Back button */}
       <button
         className="btn btn--secondary"
-        style={{ marginTop: 16 }}
+        style={{ marginTop: 12 }}
         onClick={() => navigate(-1)}
       >
         Назад

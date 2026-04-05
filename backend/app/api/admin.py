@@ -1,12 +1,13 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
+from app.models.service import Service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -24,13 +25,15 @@ async def get_stats(
     else:
         start = date(2020, 1, 1)
 
+    start_dt = datetime.combine(start, datetime.min.time())
+
     # Total bookings
     total_q = await session.execute(
         select(func.count(Booking.id)).where(Booking.date >= start)
     )
     total = total_q.scalar() or 0
 
-    # Completed
+    # By status
     completed_q = await session.execute(
         select(func.count(Booking.id)).where(
             and_(Booking.date >= start, Booking.status == BookingStatus.COMPLETED)
@@ -38,7 +41,20 @@ async def get_stats(
     )
     completed = completed_q.scalar() or 0
 
-    # Cancelled
+    confirmed_q = await session.execute(
+        select(func.count(Booking.id)).where(
+            and_(Booking.date >= start, Booking.status == BookingStatus.CONFIRMED)
+        )
+    )
+    confirmed = confirmed_q.scalar() or 0
+
+    pending_q = await session.execute(
+        select(func.count(Booking.id)).where(
+            and_(Booking.date >= start, Booking.status == BookingStatus.PENDING)
+        )
+    )
+    pending = pending_q.scalar() or 0
+
     cancelled_q = await session.execute(
         select(func.count(Booking.id)).where(
             and_(Booking.date >= start, Booking.status == BookingStatus.CANCELLED)
@@ -46,7 +62,6 @@ async def get_stats(
     )
     cancelled = cancelled_q.scalar() or 0
 
-    # No-show
     noshow_q = await session.execute(
         select(func.count(Booking.id)).where(
             and_(Booking.date >= start, Booking.status == BookingStatus.NO_SHOW)
@@ -54,34 +69,40 @@ async def get_stats(
     )
     no_show = noshow_q.scalar() or 0
 
-    # Revenue (from completed bookings)
-    from app.models.service import Service
-
+    # Revenue — from completed + confirmed + pending (all non-cancelled)
+    active_statuses = [BookingStatus.COMPLETED, BookingStatus.CONFIRMED, BookingStatus.PENDING]
     revenue_q = await session.execute(
         select(func.sum(Service.price))
         .join(Booking, Booking.service_id == Service.id)
-        .where(
-            and_(Booking.date >= start, Booking.status == BookingStatus.COMPLETED)
-        )
+        .where(and_(Booking.date >= start, Booking.status.in_(active_statuses)))
     )
     revenue = revenue_q.scalar() or 0
 
+    active_count = completed + confirmed + pending
+
     # New clients
     new_clients_q = await session.execute(
-        select(func.count(Client.id)).where(Client.created_at >= start.isoformat())
+        select(func.count(Client.id)).where(Client.created_at >= start_dt)
     )
     new_clients = new_clients_q.scalar() or 0
+
+    # Total clients
+    total_clients_q = await session.execute(select(func.count(Client.id)))
+    total_clients = total_clients_q.scalar() or 0
 
     return {
         "period": period,
         "start_date": start.isoformat(),
         "total_bookings": total,
+        "pending": pending,
+        "confirmed": confirmed,
         "completed": completed,
         "cancelled": cancelled,
         "no_show": no_show,
         "revenue": revenue,
-        "average_check": revenue // completed if completed > 0 else 0,
+        "average_check": revenue // active_count if active_count > 0 else 0,
         "new_clients": new_clients,
+        "total_clients": total_clients,
         "completion_rate": round(completed / total * 100, 1) if total > 0 else 0,
     }
 
@@ -126,11 +147,7 @@ async def get_all_bookings(
     status: str | None = None,
     session: AsyncSession = Depends(get_session),
 ):
-    """Get all bookings with optional filters."""
-    from sqlalchemy import select as sel
-
-    stmt = sel(Booking).order_by(Booking.date.desc(), Booking.time_start.desc())
-
+    stmt = select(Booking).order_by(Booking.date.desc(), Booking.time_start.desc())
     if start:
         stmt = stmt.where(Booking.date >= start)
     if end:
@@ -156,3 +173,32 @@ async def get_all_bookings(
         }
         for b in bookings
     ]
+
+
+@router.delete("/booking/{booking_id}")
+async def delete_booking(booking_id: int, session: AsyncSession = Depends(get_session)):
+    result = await session.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    await session.delete(booking)
+    await session.commit()
+    return {"ok": True}
+
+
+@router.delete("/client/{client_id}")
+async def delete_client(client_id: int, session: AsyncSession = Depends(get_session)):
+    # Delete client's bookings first
+    bookings = await session.execute(
+        select(Booking).where(Booking.client_id == client_id)
+    )
+    for b in bookings.scalars().all():
+        await session.delete(b)
+
+    result = await session.execute(select(Client).where(Client.id == client_id))
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    await session.delete(client)
+    await session.commit()
+    return {"ok": True}

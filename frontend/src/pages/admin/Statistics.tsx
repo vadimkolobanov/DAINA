@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getStats } from "../../api/client";
 
 interface Stats {
   period: string;
   total_bookings: number;
+  pending: number;
+  confirmed: number;
   completed: number;
   cancelled: number;
   no_show: number;
   revenue: number;
   average_check: number;
   new_clients: number;
+  total_clients: number;
   completion_rate: number;
 }
 
@@ -21,7 +23,9 @@ export default function Statistics() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getStats(period).then(setStats);
+    fetch(`/api/admin/stats?period=${period}`)
+      .then((r) => r.json())
+      .then(setStats);
   }, [period]);
 
   if (!stats) return <div className="hint">Загрузка...</div>;
@@ -47,40 +51,21 @@ export default function Statistics() {
       </div>
 
       <div className="stat-grid">
-        <motion.div
-          className="stat-card"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
           <div className="stat-card__value">{stats.revenue.toLocaleString()}₽</div>
           <div className="stat-card__label">Выручка</div>
         </motion.div>
-        <motion.div
-          className="stat-card"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.05 }}
-        >
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
           <div className="stat-card__value">{stats.total_bookings}</div>
           <div className="stat-card__label">Записей</div>
         </motion.div>
-        <motion.div
-          className="stat-card"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-        >
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
           <div className="stat-card__value">{stats.average_check.toLocaleString()}₽</div>
           <div className="stat-card__label">Средний чек</div>
         </motion.div>
-        <motion.div
-          className="stat-card"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.15 }}
-        >
-          <div className="stat-card__value">{stats.completion_rate}%</div>
-          <div className="stat-card__label">Выполнено</div>
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>
+          <div className="stat-card__value">{stats.total_clients}</div>
+          <div className="stat-card__label">Всего клиентов</div>
         </motion.div>
       </div>
 
@@ -90,22 +75,47 @@ export default function Statistics() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="dashboard-card__header">Детали</div>
+        <div className="dashboard-card__header">По статусам</div>
         <div className="confirmation__row">
-          <span className="confirmation__label">Выполнено</span>
+          <span className="confirmation__label">🕐 Ожидают</span>
+          <span className="confirmation__value">{stats.pending}</span>
+        </div>
+        <div className="confirmation__row">
+          <span className="confirmation__label">✅ Подтверждено</span>
+          <span className="confirmation__value">{stats.confirmed}</span>
+        </div>
+        <div className="confirmation__row">
+          <span className="confirmation__label">✅ Завершено</span>
           <span className="confirmation__value">{stats.completed}</span>
         </div>
         <div className="confirmation__row">
-          <span className="confirmation__label">Отмены</span>
+          <span className="confirmation__label">❌ Отмены</span>
           <span className="confirmation__value">{stats.cancelled}</span>
         </div>
         <div className="confirmation__row">
-          <span className="confirmation__label">No-show</span>
+          <span className="confirmation__label">⚠️ No-show</span>
           <span className="confirmation__value">{stats.no_show}</span>
         </div>
+      </motion.div>
+
+      <motion.div
+        className="dashboard-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="dashboard-card__header">Клиенты</div>
         <div className="confirmation__row">
-          <span className="confirmation__label">Новых клиентов</span>
+          <span className="confirmation__label">Новых за период</span>
           <span className="confirmation__value">{stats.new_clients}</span>
+        </div>
+        <div className="confirmation__row">
+          <span className="confirmation__label">Всего в базе</span>
+          <span className="confirmation__value">{stats.total_clients}</span>
+        </div>
+        <div className="confirmation__row">
+          <span className="confirmation__label">Конверсия выполнения</span>
+          <span className="confirmation__value">{stats.completion_rate}%</span>
         </div>
       </motion.div>
 
