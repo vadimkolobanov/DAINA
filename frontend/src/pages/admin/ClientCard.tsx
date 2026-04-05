@@ -1,0 +1,293 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+
+interface BookingItem {
+  id: number;
+  service_name: string;
+  date: string;
+  time_start: string;
+  time_end: string;
+  status: string;
+  price: number;
+}
+
+interface ClientDetail {
+  id: number;
+  telegram_id: number;
+  first_name: string;
+  last_name: string | null;
+  username: string | null;
+  phone: string | null;
+  instagram_handle: string | null;
+  notes: string | null;
+  is_vip: boolean;
+  visit_count: number;
+  total_spent: number;
+  referral_code: string | null;
+  created_at: string | null;
+  last_visit_at: string | null;
+  bookings: BookingItem[];
+  average_check: number;
+}
+
+const statusEmoji: Record<string, string> = {
+  pending: "🕐",
+  confirmed: "✅",
+  completed: "✅",
+  cancelled: "❌",
+  no_show: "⚠️",
+};
+
+const statusLabel: Record<string, string> = {
+  pending: "Ожидает",
+  confirmed: "Подтверждено",
+  completed: "Завершено",
+  cancelled: "Отменено",
+  no_show: "Не пришёл",
+};
+
+export default function ClientCard() {
+  const { clientId } = useParams();
+  const [client, setClient] = useState<ClientDetail | null>(null);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [isVip, setIsVip] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch(`/api/clients/${clientId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setClient(data);
+        setNotes(data.notes || "");
+        setIsVip(data.is_vip);
+      });
+  }, [clientId]);
+
+  const saveNotes = async () => {
+    await fetch(`/api/clients/${clientId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes }),
+    });
+    setEditingNotes(false);
+    setClient((c) => (c ? { ...c, notes } : c));
+  };
+
+  const toggleVip = async () => {
+    const newVip = !isVip;
+    await fetch(`/api/clients/${clientId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_vip: newVip }),
+    });
+    setIsVip(newVip);
+    setClient((c) => (c ? { ...c, is_vip: newVip } : c));
+  };
+
+  if (!client) return <div className="hint">Загрузка...</div>;
+
+  const fullName = `${client.first_name} ${client.last_name || ""}`.trim();
+
+  return (
+    <div>
+      {/* Header */}
+      <motion.div
+        className="dashboard-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ textAlign: "center", paddingTop: 24, paddingBottom: 24 }}
+      >
+        <div className="client-item__avatar" style={{ width: 64, height: 64, fontSize: 28, margin: "0 auto 12px" }}>
+          {client.first_name.charAt(0).toUpperCase()}
+        </div>
+        <h2 style={{ fontSize: 22, marginBottom: 4 }}>{fullName}</h2>
+
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          {client.instagram_handle && (
+            <span style={{ fontSize: 14, color: "var(--tg-theme-hint-color)" }}>
+              @{client.instagram_handle}
+            </span>
+          )}
+          {client.username && (
+            <span style={{ fontSize: 14, color: "var(--tg-theme-hint-color)" }}>
+              tg: @{client.username}
+            </span>
+          )}
+          {client.phone && (
+            <span style={{ fontSize: 14, color: "var(--tg-theme-hint-color)" }}>
+              {client.phone}
+            </span>
+          )}
+        </div>
+
+        <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 8 }}>
+          <button
+            className={`filter-chip ${isVip ? "active" : ""}`}
+            onClick={toggleVip}
+          >
+            {isVip ? "VIP" : "Сделать VIP"}
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Stats */}
+      <div className="stat-grid">
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+          <div className="stat-card__value">{client.visit_count}</div>
+          <div className="stat-card__label">Визитов</div>
+        </motion.div>
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
+          <div className="stat-card__value">{client.total_spent.toLocaleString()}₽</div>
+          <div className="stat-card__label">Всего</div>
+        </motion.div>
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+          <div className="stat-card__value">{client.average_check.toLocaleString()}₽</div>
+          <div className="stat-card__label">Средний чек</div>
+        </motion.div>
+        <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>
+          <div className="stat-card__value">
+            {client.last_visit_at
+              ? new Date(client.last_visit_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+              : "—"}
+          </div>
+          <div className="stat-card__label">Посл. визит</div>
+        </motion.div>
+      </div>
+
+      {/* Notes */}
+      <motion.div
+        className="dashboard-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="dashboard-card__header" style={{ display: "flex", justifyContent: "space-between" }}>
+          <span>Заметки</span>
+          <button
+            className="filter-chip"
+            style={{ fontSize: 11, padding: "2px 10px" }}
+            onClick={() => editingNotes ? saveNotes() : setEditingNotes(true)}
+          >
+            {editingNotes ? "Сохранить" : "Изменить"}
+          </button>
+        </div>
+        {editingNotes ? (
+          <textarea
+            className="search-input"
+            style={{ minHeight: 80, marginBottom: 0, resize: "vertical" }}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Предпочтения, аллергии, особенности..."
+          />
+        ) : (
+          <div style={{ fontSize: 14, color: notes ? "var(--tg-theme-text-color)" : "var(--tg-theme-hint-color)", lineHeight: 1.5 }}>
+            {notes || "Нет заметок"}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Booking history */}
+      <motion.div
+        className="dashboard-card"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="dashboard-card__header">
+          История записей ({client.bookings.length})
+        </div>
+
+        {client.bookings.length === 0 && (
+          <div style={{ fontSize: 14, color: "var(--tg-theme-hint-color)", padding: "8px 0" }}>
+            Нет записей
+          </div>
+        )}
+
+        {client.bookings.map((b) => (
+          <div key={b.id} className="booking-item">
+            <div style={{ minWidth: 36, textAlign: "center", fontSize: 18 }}>
+              {statusEmoji[b.status] || "❓"}
+            </div>
+            <div className="booking-item__info">
+              <div className="booking-item__name">{b.service_name}</div>
+              <div className="booking-item__service">
+                {new Date(b.date).toLocaleDateString("ru-RU", {
+                  day: "numeric",
+                  month: "short",
+                  weekday: "short",
+                })}{" "}
+                &bull; {b.time_start}–{b.time_end}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{b.price.toLocaleString()}₽</div>
+              <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)" }}>
+                {statusLabel[b.status]}
+              </div>
+            </div>
+          </div>
+        ))}
+      </motion.div>
+
+      {/* Deeplink */}
+      {client.referral_code && (
+        <motion.div
+          className="dashboard-card"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="dashboard-card__header">Ссылка для клиента</div>
+          <div
+            style={{
+              fontSize: 13,
+              background: "var(--tg-theme-secondary-bg-color)",
+              padding: "10px 12px",
+              borderRadius: 8,
+              wordBreak: "break-all",
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              navigator.clipboard.writeText(`t.me/DAINANailBot?start=ref_${client.referral_code}`);
+            }}
+          >
+            t.me/DAINANailBot?start=ref_{client.referral_code}
+            <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)", marginTop: 4 }}>
+              Нажмите чтобы скопировать
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Back button */}
+      <button
+        className="btn btn--secondary"
+        style={{ marginTop: 16 }}
+        onClick={() => navigate(-1)}
+      >
+        Назад
+      </button>
+
+      <div className="tab-nav">
+        <button className="tab-nav__item" onClick={() => navigate("/")}>
+          <span className="tab-nav__icon">📊</span>
+          Главная
+        </button>
+        <button className="tab-nav__item active" onClick={() => navigate("/clients")}>
+          <span className="tab-nav__icon">👥</span>
+          Клиенты
+        </button>
+        <button className="tab-nav__item" onClick={() => navigate("/schedule")}>
+          <span className="tab-nav__icon">📅</span>
+          График
+        </button>
+        <button className="tab-nav__item" onClick={() => navigate("/stats")}>
+          <span className="tab-nav__icon">📈</span>
+          Стат-ка
+        </button>
+      </div>
+    </div>
+  );
+}

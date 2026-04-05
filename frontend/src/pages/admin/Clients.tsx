@@ -95,6 +95,7 @@ export default function Clients() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.03 }}
+          onClick={() => navigate(`/client/${c.id}`)}
         >
           <div className="client-item__avatar">
             {c.first_name.charAt(0).toUpperCase()}

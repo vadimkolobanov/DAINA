@@ -39,6 +39,25 @@ class ClientUpdate(BaseModel):
     is_vip: bool | None = None
 
 
+class ClientDetailResponse(BaseModel):
+    id: int
+    telegram_id: int
+    first_name: str
+    last_name: str | None
+    username: str | None
+    phone: str | None
+    instagram_handle: str | None
+    notes: str | None
+    is_vip: bool
+    visit_count: int
+    total_spent: int
+    referral_code: str | None
+    created_at: str | None = None
+    last_visit_at: str | None = None
+    bookings: list = []
+    average_check: int = 0
+
+
 @router.get("", response_model=list[ClientResponse])
 async def list_clients(
     filter: str = "all",
@@ -53,16 +72,51 @@ async def list_clients(
     return clients
 
 
-@router.get("/{client_id}", response_model=ClientResponse)
+@router.get("/{client_id}", response_model=ClientDetailResponse)
 async def get_client(client_id: int, session: AsyncSession = Depends(get_session)):
     from sqlalchemy import select
     from app.models.client import Client
+    from app.services.booking_service import BookingService
 
     result = await session.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    return client
+
+    booking_svc = BookingService(session)
+    bookings = await booking_svc.get_client_bookings(client_id)
+
+    booking_list = [
+        {
+            "id": b.id,
+            "service_name": b.service.name,
+            "date": b.date.isoformat(),
+            "time_start": b.time_start.strftime("%H:%M"),
+            "time_end": b.time_end.strftime("%H:%M"),
+            "status": b.status.value,
+            "price": b.service.price,
+        }
+        for b in bookings
+    ]
+
+    return ClientDetailResponse(
+        id=client.id,
+        telegram_id=client.telegram_id,
+        first_name=client.first_name,
+        last_name=client.last_name,
+        username=client.username,
+        phone=client.phone,
+        instagram_handle=client.instagram_handle,
+        notes=client.notes,
+        is_vip=client.is_vip,
+        visit_count=client.visit_count,
+        total_spent=client.total_spent,
+        referral_code=client.referral_code,
+        created_at=client.created_at.isoformat() if client.created_at else None,
+        last_visit_at=client.last_visit_at.isoformat() if client.last_visit_at else None,
+        bookings=booking_list,
+        average_check=client.total_spent // client.visit_count if client.visit_count > 0 else 0,
+    )
 
 
 @router.get("/telegram/{telegram_id}", response_model=ClientResponse)

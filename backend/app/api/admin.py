@@ -87,22 +87,27 @@ async def get_stats(
 
 
 @router.get("/dashboard")
-async def get_dashboard(session: AsyncSession = Depends(get_session)):
+async def get_dashboard(
+    target_date: date | None = None,
+    session: AsyncSession = Depends(get_session),
+):
     from app.services.booking_service import BookingService
 
-    today = date.today()
+    day = target_date or date.today()
     svc = BookingService(session)
-    bookings = await svc.get_bookings_by_date(today)
+    bookings = await svc.get_bookings_by_date(day)
 
     return {
-        "date": today.isoformat(),
+        "date": day.isoformat(),
         "bookings_count": len(bookings),
         "bookings": [
             {
                 "id": b.id,
+                "client_id": b.client.id,
                 "client_name": f"{b.client.first_name} {b.client.last_name or ''}".strip(),
                 "client_instagram": b.client.instagram_handle,
                 "client_is_new": b.client.visit_count == 0,
+                "client_telegram_id": b.client.telegram_id,
                 "service_name": b.service.name,
                 "time_start": b.time_start.strftime("%H:%M"),
                 "time_end": b.time_end.strftime("%H:%M"),
@@ -112,3 +117,42 @@ async def get_dashboard(session: AsyncSession = Depends(get_session)):
             for b in bookings
         ],
     }
+
+
+@router.get("/all-bookings")
+async def get_all_bookings(
+    start: date | None = None,
+    end: date | None = None,
+    status: str | None = None,
+    session: AsyncSession = Depends(get_session),
+):
+    """Get all bookings with optional filters."""
+    from sqlalchemy import select as sel
+
+    stmt = sel(Booking).order_by(Booking.date.desc(), Booking.time_start.desc())
+
+    if start:
+        stmt = stmt.where(Booking.date >= start)
+    if end:
+        stmt = stmt.where(Booking.date <= end)
+    if status:
+        stmt = stmt.where(Booking.status == BookingStatus(status))
+
+    result = await session.execute(stmt)
+    bookings = result.scalars().all()
+
+    return [
+        {
+            "id": b.id,
+            "client_id": b.client.id,
+            "client_name": f"{b.client.first_name} {b.client.last_name or ''}".strip(),
+            "client_instagram": b.client.instagram_handle,
+            "service_name": b.service.name,
+            "date": b.date.isoformat(),
+            "time_start": b.time_start.strftime("%H:%M"),
+            "time_end": b.time_end.strftime("%H:%M"),
+            "status": b.status.value,
+            "price": b.service.price,
+        }
+        for b in bookings
+    ]

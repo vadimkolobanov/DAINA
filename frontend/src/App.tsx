@@ -8,6 +8,8 @@ import BookingSuccess from "./pages/client/BookingSuccess";
 import MyBookings from "./pages/client/MyBookings";
 import Dashboard from "./pages/admin/Dashboard";
 import Clients from "./pages/admin/Clients";
+import ClientCard from "./pages/admin/ClientCard";
+import AllBookings from "./pages/admin/AllBookings";
 import Schedule from "./pages/admin/Schedule";
 import Statistics from "./pages/admin/Statistics";
 import { useState } from "react";
@@ -38,6 +40,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
+          <Route path="/client/:clientId" element={<ClientCard />} />
+          <Route path="/all-bookings" element={<AllBookings />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/stats" element={<Statistics />} />
           <Route path="*" element={<Navigate to="/" />} />
