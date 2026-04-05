@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     # Telegram
     BOT_TOKEN: str = ""
     ADMIN_TELEGRAM_ID: int = 0
-    WEBAPP_URL: str = ""
+    WEBAPP_URL: str = "https://vadimkolobanov-daina-be95.twc1.net"
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://user:pass@localhost:5432/daina"
