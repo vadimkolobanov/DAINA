@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, datetime, time
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -32,8 +32,8 @@ class BookingResponse(BaseModel):
     date: date
     time_start: time
     time_end: time
-    status: str
-    created_at: str | None = None
+    status: BookingStatus
+    created_at: datetime | None = None
     client_name: str | None = None
     service_name: str | None = None
 
@@ -95,6 +95,16 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     booking = await svc.create_booking(
         data.client_id, data.service_id, data.date, target_time, service.duration_minutes
     )
+
+    # Notify master about new booking
+    try:
+        from app.bot.bot import bot
+        from app.services.notification_service import NotificationService
+        notifier = NotificationService(bot)
+        await notifier.notify_admin_new_booking(booking)
+    except Exception:
+        pass  # Don't fail booking if notification fails
+
     return booking
 
 
