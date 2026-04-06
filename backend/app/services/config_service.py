@@ -18,6 +18,7 @@ CONFIGURABLE_KEYS = {
     "reminder_24h",    # enable 24h reminders
     "reminder_2h",     # enable 2h reminders
     "followup_enabled", # enable post-visit followups
+    "care_tips",       # care tips sent to client after completed visit
 }
 
 # Default values sourced from env settings
@@ -32,6 +33,12 @@ _ENV_DEFAULTS = {
     "reminder_24h": lambda: str(settings.REMINDER_24H).lower(),
     "reminder_2h": lambda: str(settings.REMINDER_2H).lower(),
     "followup_enabled": lambda: str(settings.FOLLOWUP_ENABLED).lower(),
+    "care_tips": lambda: (
+        "Первые 2-3 часа избегайте контакта с водой\n"
+        "Не используйте ацетонсодержащие средства\n"
+        "Наносите масло для кутикулы ежедневно\n"
+        "Используйте перчатки при уборке и мытье посуды"
+    ),
 }
 
 

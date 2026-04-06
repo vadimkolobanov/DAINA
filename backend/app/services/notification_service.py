@@ -75,6 +75,67 @@ class NotificationService:
             parse_mode="HTML",
         )
 
+    async def notify_client_completed(self, booking: Booking, care_tips: str = ""):
+        """Notify client that their visit is marked as completed."""
+        service = booking.service
+        text = (
+            f"Спасибо, что были у нас, <b>{booking.client.first_name}</b>! 💅✨\n\n"
+            f"📋 {service.name}\n"
+            f"📅 {booking.date.strftime('%d.%m.%Y')}\n"
+            f"💰 {service.price}₽\n"
+        )
+        if care_tips:
+            tips_formatted = "\n".join(f"  • {line.strip()}" for line in care_tips.strip().split("\n") if line.strip())
+            text += f"\n<b>Советы по уходу:</b>\n{tips_formatted}\n"
+        text += "\nБудем рады видеть вас снова!"
+
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="📅 Записаться снова", web_app={"url": settings.WEBAPP_URL})],
+            ]
+        )
+        if booking.client.telegram_id:
+            await self.bot.send_message(
+                booking.client.telegram_id, text, reply_markup=keyboard, parse_mode="HTML"
+            )
+
+    async def notify_client_cancelled(self, booking: Booking):
+        """Notify client that their booking was cancelled."""
+        service = booking.service
+        text = (
+            f"К сожалению, ваша запись отменена 😔\n\n"
+            f"📋 {service.name}\n"
+            f"📅 {booking.date.strftime('%d.%m.%Y')}\n"
+            f"🕐 {booking.time_start.strftime('%H:%M')} — {booking.time_end.strftime('%H:%M')}\n\n"
+            f"Вы можете записаться на другое время:"
+        )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="📅 Выбрать другое время", web_app={"url": settings.WEBAPP_URL})],
+            ]
+        )
+        if booking.client.telegram_id:
+            await self.bot.send_message(
+                booking.client.telegram_id, text, reply_markup=keyboard, parse_mode="HTML"
+            )
+
+    async def notify_client_noshow(self, booking: Booking):
+        """Gentle message for no-show client."""
+        text = (
+            f"Мы ждали вас сегодня, но, к сожалению, вы не пришли 😔\n\n"
+            f"Если что-то случилось — ничего страшного! "
+            f"Вы всегда можете записаться на удобное время 💅"
+        )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="📅 Записаться", web_app={"url": settings.WEBAPP_URL})],
+            ]
+        )
+        if booking.client.telegram_id:
+            await self.bot.send_message(
+                booking.client.telegram_id, text, reply_markup=keyboard, parse_mode="HTML"
+            )
+
     async def send_reminder_24h(self, booking: Booking):
         """Send 24-hour reminder to client."""
         service = booking.service

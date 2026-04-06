@@ -7,7 +7,7 @@ interface ConfigField {
   key: string;
   label: string;
   hint?: string;
-  type?: "text" | "toggle";
+  type?: "text" | "toggle" | "textarea";
 }
 
 interface ConfigSection {
@@ -44,6 +44,12 @@ const CONFIG_SECTIONS: ConfigSection[] = [
       { key: "reminder_24h", label: "Напоминание за 24 часа", type: "toggle" },
       { key: "reminder_2h", label: "Напоминание за 2 часа", type: "toggle" },
       { key: "followup_enabled", label: "Сообщение после визита", type: "toggle" },
+    ],
+  },
+  {
+    title: "После визита",
+    fields: [
+      { key: "care_tips", label: "Советы по уходу", type: "textarea", hint: "Отправляются клиенту когда визит завершён. Каждый совет — с новой строки." },
     ],
   },
 ];
@@ -148,6 +154,22 @@ export default function Settings() {
                       />
                     </div>
                   </div>
+                ) : field.type === "textarea" ? (
+                  <>
+                    <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
+                      {field.label}
+                    </label>
+                    <textarea
+                      className="search-input"
+                      style={{ marginBottom: 0, minHeight: 100, resize: "vertical", lineHeight: 1.5 }}
+                      value={config[field.key] || ""}
+                      onChange={(e) => setConfig({ ...config, [field.key]: e.target.value })}
+                      placeholder={field.hint}
+                    />
+                    {field.hint && (
+                      <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)", marginTop: 4 }}>{field.hint}</div>
+                    )}
+                  </>
                 ) : (
                   <>
                     <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>

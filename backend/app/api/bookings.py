@@ -139,6 +139,27 @@ async def update_booking_status(
     booking = await svc.update_status(booking_id, booking_status)
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Notify client about status change
+    try:
+        from app.bot.bot import bot
+        from app.services.notification_service import NotificationService
+        from app.services.config_service import ConfigService
+        notifier = NotificationService(bot)
+
+        if booking_status == BookingStatus.CONFIRMED:
+            await notifier.notify_client_confirmed(booking)
+        elif booking_status == BookingStatus.COMPLETED:
+            config_svc = ConfigService(session)
+            care_tips = await config_svc.get("care_tips")
+            await notifier.notify_client_completed(booking, care_tips)
+        elif booking_status == BookingStatus.CANCELLED:
+            await notifier.notify_client_cancelled(booking)
+        elif booking_status == BookingStatus.NO_SHOW:
+            await notifier.notify_client_noshow(booking)
+    except Exception:
+        logger.exception("Failed to notify client about status change for booking %s", booking.id)
+
     return {"ok": True}
 
 
