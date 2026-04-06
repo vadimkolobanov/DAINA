@@ -130,6 +130,10 @@ export default function Clients() {
           <span className="tab-nav__icon">📊</span>
           Главная
         </button>
+        <button className="tab-nav__item" onClick={() => navigate("/all-bookings")}>
+          <span className="tab-nav__icon">📋</span>
+          Записи
+        </button>
         <button className="tab-nav__item active" onClick={() => navigate("/clients")}>
           <span className="tab-nav__icon">👥</span>
           Клиенты

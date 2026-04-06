@@ -153,7 +153,7 @@ export default function App() {
           path="/confirm"
           element={<Confirmation booking={booking} />}
         />
-        <Route path="/success" element={<BookingSuccess />} />
+        <Route path="/success" element={<BookingSuccess booking={booking} />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="*" element={<Navigate to="/" />} />

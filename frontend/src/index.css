@@ -204,13 +204,15 @@ body {
 
 .calendar__day--disabled {
   color: var(--tg-theme-hint-color);
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: default;
+  text-decoration: line-through;
 }
 
 .calendar__day--unavailable {
   color: var(--tg-theme-hint-color);
-  opacity: 0.5;
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* Time Slots */
@@ -487,7 +489,7 @@ body {
 /* Tab nav */
 .tab-nav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   position: fixed;
   bottom: 0;
@@ -640,4 +642,43 @@ body {
   font-size: 12px;
   color: var(--tg-theme-hint-color);
   margin-top: 4px;
+}
+
+/* Skeleton loader */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.skeleton__block {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius);
+  height: 80px;
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+.skeleton__block--sm {
+  height: 48px;
+}
+
+.skeleton__block--lg {
+  height: 120px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Focus indicators */
+.btn:focus-visible,
+.filter-chip:focus-visible,
+.time-slot:focus-visible,
+.calendar__day:focus-visible,
+.tab-nav__item:focus-visible,
+.service-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

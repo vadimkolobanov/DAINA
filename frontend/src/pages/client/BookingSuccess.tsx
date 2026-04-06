@@ -3,8 +3,13 @@ import { motion } from "framer-motion";
 import ConfettiAnimation from "../../components/ConfettiAnimation";
 import { useTelegram } from "../../hooks/useTelegram";
 import { getPublicConfig } from "../../api/client";
+import { BookingState } from "../../App";
 
-export default function BookingSuccess() {
+interface Props {
+  booking: BookingState;
+}
+
+export default function BookingSuccess({ booking }: Props) {
   const { close, tg } = useTelegram();
   const [masterUsername, setMasterUsername] = useState("");
 
@@ -14,6 +19,12 @@ export default function BookingSuccess() {
       .then((c) => setMasterUsername(c.master_username || ""))
       .catch(() => {});
   }, []);
+
+  const dateFormatted = booking.date
+    ? new Date(booking.date).toLocaleDateString("ru-RU", {
+        weekday: "long", day: "numeric", month: "long",
+      })
+    : "";
 
   return (
     <motion.div
@@ -41,6 +52,37 @@ export default function BookingSuccess() {
       >
         Вы записаны!
       </motion.h1>
+
+      {booking.serviceName && (
+        <motion.div
+          className="dashboard-card"
+          style={{ textAlign: "left", marginBottom: 16 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <div className="confirmation__row">
+            <span className="confirmation__label">Услуга</span>
+            <span className="confirmation__value">{booking.serviceName}</span>
+          </div>
+          {dateFormatted && (
+            <div className="confirmation__row">
+              <span className="confirmation__label">Дата</span>
+              <span className="confirmation__value">{dateFormatted}</span>
+            </div>
+          )}
+          {booking.time && (
+            <div className="confirmation__row">
+              <span className="confirmation__label">Время</span>
+              <span className="confirmation__value">{booking.time}</span>
+            </div>
+          )}
+          <div className="confirmation__row" style={{ borderBottom: "none" }}>
+            <span className="confirmation__label">Стоимость</span>
+            <span className="confirmation__value">{booking.servicePrice} руб</span>
+          </div>
+        </motion.div>
+      )}
 
       <motion.p
         className="success__text"

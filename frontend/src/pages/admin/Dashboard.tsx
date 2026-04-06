@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getDashboard } from "../../api/client";
+import Skeleton from "../../components/Skeleton";
 
 interface DashboardBooking {
   id: number;
@@ -61,6 +62,27 @@ export default function Dashboard() {
   return (
     <div>
       {/* Date navigator */}
+      <div style={{ display: "flex", gap: 4, justifyContent: "center", marginBottom: 8 }}>
+        {Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() + i);
+          const ds = d.toISOString().split("T")[0];
+          const dayName = d.toLocaleDateString("ru-RU", { weekday: "short" });
+          const dayNum = d.getDate();
+          const isSelected = ds === selectedDate;
+          return (
+            <button
+              key={ds}
+              className={`filter-chip ${isSelected ? "active" : ""}`}
+              style={{ fontSize: 11, padding: "6px 8px", minWidth: 42, textAlign: "center" }}
+              onClick={() => setSelectedDate(ds)}
+            >
+              <div>{dayName}</div>
+              <div style={{ fontWeight: 700 }}>{dayNum}</div>
+            </button>
+          );
+        })}
+      </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <button className="calendar__nav" onClick={() => changeDate(-1)} style={{ fontSize: 24 }}>&#8249;</button>
         <div style={{ textAlign: "center" }}>
@@ -89,7 +111,7 @@ export default function Dashboard() {
       {error ? (
         <div className="hint">Не удалось загрузить данные</div>
       ) : !data ? (
-        <div className="hint">Загрузка...</div>
+        <Skeleton count={3} />
       ) : (
         <>
           <motion.div
@@ -166,6 +188,10 @@ export default function Dashboard() {
         <button className="tab-nav__item active" onClick={() => navigate("/")}>
           <span className="tab-nav__icon">📊</span>
           Главная
+        </button>
+        <button className="tab-nav__item" onClick={() => navigate("/all-bookings")}>
+          <span className="tab-nav__icon">📋</span>
+          Записи
         </button>
         <button className="tab-nav__item" onClick={() => navigate("/clients")}>
           <span className="tab-nav__icon">👥</span>

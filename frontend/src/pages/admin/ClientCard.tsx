@@ -55,6 +55,7 @@ export default function ClientCard() {
   const [notes, setNotes] = useState("");
   const [isVip, setIsVip] = useState(false);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<{bookingId: number; status: string; label: string} | null>(null);
   const [botUsername, setBotUsername] = useState("DAINANailBot");
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
@@ -96,11 +97,17 @@ export default function ClientCard() {
     } catch { /* revert on error — state unchanged */ }
   };
 
-  const changeBookingStatus = async (bookingId: number, status: string) => {
+  const askStatus = (bookingId: number, status: string, label: string) => {
+    setConfirmStatus({ bookingId, status, label });
+  };
+
+  const doChangeStatus = async () => {
+    if (!confirmStatus) return;
     try {
-      await updateBookingStatus(bookingId, status);
+      await updateBookingStatus(confirmStatus.bookingId, confirmStatus.status);
       loadClient();
     } catch { /* status unchanged on error */ }
+    setConfirmStatus(null);
   };
 
   const handleDeleteBooking = async (bookingId: number) => {
@@ -289,23 +296,23 @@ export default function ClientCard() {
             <div style={{ display: "flex", gap: 6, marginTop: 8, marginLeft: 36, flexWrap: "wrap" }}>
               {b.status === "pending" && (
                 <>
-                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "confirmed")}>
+                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => askStatus(b.id, "confirmed", "Подтвердить")}>
                     Подтвердить
                   </button>
-                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "cancelled")}>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => askStatus(b.id, "cancelled", "Отклонить")}>
                     Отклонить
                   </button>
                 </>
               )}
               {b.status === "confirmed" && (
                 <>
-                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "completed")}>
+                  <button className="filter-chip active" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => askStatus(b.id, "completed", "Завершить")}>
                     Завершить
                   </button>
-                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "no_show")}>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => askStatus(b.id, "no_show", "Не пришёл")}>
                     Не пришёл
                   </button>
-                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => changeBookingStatus(b.id, "cancelled")}>
+                  <button className="filter-chip" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => askStatus(b.id, "cancelled", "Отменить")}>
                     Отменить
                   </button>
                 </>
@@ -321,6 +328,40 @@ export default function ClientCard() {
           </div>
         ))}
       </motion.div>
+
+      {/* Status confirmation modal */}
+      {confirmStatus && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            background: "rgba(0,0,0,0.4)", zIndex: 200,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}
+          onClick={() => setConfirmStatus(null)}
+        >
+          <motion.div
+            className="dashboard-card"
+            initial={{ scale: 0.9 }}
+            animate={{ scale: 1 }}
+            style={{ textAlign: "center", maxWidth: 300, width: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+              {confirmStatus.label}?
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => setConfirmStatus(null)}>
+                Отмена
+              </button>
+              <button className="btn btn--primary" style={{ flex: 1 }} onClick={doChangeStatus}>
+                Да
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Deeplink */}
       {client.referral_code && (
@@ -403,6 +444,10 @@ export default function ClientCard() {
         <button className="tab-nav__item" onClick={() => navigate("/")}>
           <span className="tab-nav__icon">📊</span>
           Главная
+        </button>
+        <button className="tab-nav__item" onClick={() => navigate("/all-bookings")}>
+          <span className="tab-nav__icon">📋</span>
+          Записи
         </button>
         <button className="tab-nav__item active" onClick={() => navigate("/clients")}>
           <span className="tab-nav__icon">👥</span>
