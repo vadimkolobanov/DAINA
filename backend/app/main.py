@@ -14,6 +14,8 @@ from app.bot.bot import bot, dp
 from app.bot.handlers import start as start_handler
 from app.bot.handlers import booking as booking_handler
 from app.bot.handlers import admin as admin_handler
+from sqlalchemy import text
+
 from app.config import settings
 from app.database import engine, Base, async_session
 from app.services.schedule_service import ScheduleService
@@ -27,6 +29,14 @@ scheduler = AsyncIOScheduler()
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Add columns that may not exist yet (safe to run repeatedly)
+        for stmt in [
+            "ALTER TABLE services ADD COLUMN IF NOT EXISTS old_price INTEGER",
+        ]:
+            try:
+                await conn.execute(text(stmt))
+            except Exception:
+                pass
 
     # Initialize default schedule
     async with async_session() as session:
