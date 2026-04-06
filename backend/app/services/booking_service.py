@@ -12,8 +12,9 @@ from app.models.service import Service
 
 
 class BookingService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, slot_interval: int = 30):
         self.session = session
+        self.slot_interval = slot_interval
 
     async def get_available_slots(
         self, target_date: date, duration_minutes: int
@@ -56,12 +57,11 @@ class BookingService:
         bookings = result.scalars().all()
         booked_ranges = [(b.time_start, b.time_end) for b in bookings]
 
-        # Generate slots every 30 minutes
         slots = []
         current = datetime.combine(target_date, work_start)
         end_dt = datetime.combine(target_date, work_end)
         duration = timedelta(minutes=duration_minutes)
-        step = timedelta(minutes=30)
+        step = timedelta(minutes=self.slot_interval)
 
         while current + duration <= end_dt:
             slot_start = current.time()

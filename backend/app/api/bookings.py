@@ -13,8 +13,19 @@ from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
 from app.models.service import Service
 from app.services.booking_service import BookingService
+from app.services.config_service import ConfigService
 
 logger = logging.getLogger(__name__)
+
+
+async def _get_slot_interval(session: AsyncSession) -> int:
+    """Get slot interval from config, default 30 min."""
+    try:
+        config_svc = ConfigService(session)
+        val = await config_svc.get("slot_interval")
+        return max(10, int(val))
+    except (ValueError, TypeError):
+        return 30
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -61,7 +72,8 @@ async def get_available_slots(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    svc = BookingService(session)
+    interval = await _get_slot_interval(session)
+    svc = BookingService(session, slot_interval=interval)
     slots = await svc.get_available_slots(data.date, service.duration_minutes)
     return [{"time": s.strftime("%H:%M")} for s in slots]
 
@@ -78,7 +90,8 @@ async def get_available_dates(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    svc = BookingService(session)
+    interval = await _get_slot_interval(session)
+    svc = BookingService(session, slot_interval=interval)
     dates = await svc.get_available_dates(start, end, service.duration_minutes)
     return dates
 
@@ -106,7 +119,8 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     except (ValueError, IndexError):
         raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
 
-    svc = BookingService(session)
+    interval = await _get_slot_interval(session)
+    svc = BookingService(session, slot_interval=interval)
     slots = await svc.get_available_slots(data.date, service.duration_minutes)
     if target_time not in slots:
         raise HTTPException(status_code=400, detail="Time slot not available")

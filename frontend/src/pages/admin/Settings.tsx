@@ -35,6 +35,7 @@ const CONFIG_SECTIONS: ConfigSection[] = [
   {
     title: "Расписание",
     fields: [
+      { key: "slot_interval", label: "Интервал между записями (мин)", hint: "Шаг для доступных слотов: 15, 20, 30, 60 и т.д." },
       { key: "correction_days", label: "Дней до коррекции", hint: "Через сколько дней предложить повторный визит" },
     ],
   },
