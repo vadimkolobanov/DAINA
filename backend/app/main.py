@@ -32,6 +32,7 @@ async def init_db():
         # Add columns that may not exist yet (safe to run repeatedly)
         for stmt in [
             "ALTER TABLE services ADD COLUMN IF NOT EXISTS old_price INTEGER",
+            "ALTER TABLE clients ALTER COLUMN telegram_id DROP NOT NULL",
         ]:
             try:
                 await conn.execute(text(stmt))
