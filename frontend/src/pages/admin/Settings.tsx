@@ -19,10 +19,19 @@ const CONFIG_SECTIONS: ConfigSection[] = [
   {
     title: "Студия",
     fields: [
-      { key: "app_name", label: "Название студии", hint: "Отображается в приветствии бота" },
-      { key: "master_name", label: "Имя мастера", hint: "Используется в сообщениях клиентам" },
-      { key: "studio_address", label: "Адрес студии", hint: "Показывается в напоминаниях" },
+      { key: "app_name", label: "Название", hint: "Отображается в приветствии бота" },
+      { key: "studio_address", label: "Адрес", hint: "Показывается в подтверждениях и напоминаниях" },
       { key: "studio_map_url", label: "Ссылка на карту", hint: "Яндекс.Карты или Google Maps" },
+      { key: "currency", label: "Валюта", hint: "руб, BYN, $ и т.д." },
+    ],
+  },
+  {
+    title: "Мастер",
+    fields: [
+      { key: "master_name", label: "Имя", hint: "Используется в сообщениях клиентам" },
+      { key: "master_username", label: "Telegram", hint: "Username без @. Клиенты увидят в контактах" },
+      { key: "master_phone", label: "Телефон", hint: "Показывается клиентам на странице контактов" },
+      { key: "master_instagram", label: "Instagram", hint: "Без @. Используется в галерее и контактах" },
     ],
   },
   {
@@ -30,14 +39,12 @@ const CONFIG_SECTIONS: ConfigSection[] = [
     fields: [
       { key: "bot_username", label: "Username бота", hint: "Без @, например: DAINANailBot" },
       { key: "admin_ids", label: "ID администраторов", hint: "Telegram ID через запятую. Узнать свой: @userinfobot" },
-      { key: "master_username", label: "Telegram мастера", hint: "Username без @. Клиенты смогут написать через кнопку в приложении" },
-      { key: "currency", label: "Валюта", hint: "Символ валюты: руб, BYN, ₽, $ и т.д." },
     ],
   },
   {
     title: "Расписание",
     fields: [
-      { key: "slot_interval", label: "Интервал между записями (мин)", hint: "Шаг начала слотов, например 30 = записи в 9:00, 9:30, 10:00..." },
+      { key: "slot_interval", label: "Интервал записей (мин)", hint: "Шаг начала слотов, например 30 = записи в 9:00, 9:30, 10:00..." },
       { key: "correction_days", label: "Дней до коррекции", hint: "Через сколько дней предложить повторный визит" },
     ],
   },
@@ -50,9 +57,10 @@ const CONFIG_SECTIONS: ConfigSection[] = [
     ],
   },
   {
-    title: "После визита",
+    title: "Тексты сообщений",
     fields: [
-      { key: "care_tips", label: "Советы по уходу", type: "textarea", hint: "Отправляются клиенту когда визит завершён. Каждый совет — с новой строки." },
+      { key: "care_tips", label: "Советы по уходу", type: "textarea", hint: "Отправляются клиенту при завершении визита. Каждый совет — с новой строки." },
+      { key: "vip_message", label: "Сообщение при VIP-статусе", type: "textarea", hint: "Отправляется клиенту когда мастер присваивает VIP." },
     ],
   },
 ];
@@ -108,6 +116,7 @@ export default function Settings() {
           {section.fields.map((field) => {
             const i = fieldIndex++;
             const isToggle = field.type === "toggle";
+            const isTextarea = field.type === "textarea";
             const isOn = config[field.key] === "true";
 
             return (
@@ -132,32 +141,19 @@ export default function Settings() {
                     </div>
                     <div
                       style={{
-                        width: 48,
-                        height: 28,
-                        borderRadius: 14,
+                        width: 48, height: 28, borderRadius: 14,
                         background: isOn ? "var(--success)" : "var(--tg-theme-secondary-bg-color)",
-                        transition: "background 0.2s",
-                        position: "relative",
-                        flexShrink: 0,
-                        marginLeft: 12,
+                        transition: "background 0.2s", position: "relative", flexShrink: 0, marginLeft: 12,
                       }}
                     >
-                      <div
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 11,
-                          background: "white",
-                          position: "absolute",
-                          top: 3,
-                          left: isOn ? 23 : 3,
-                          transition: "left 0.2s",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                        }}
-                      />
+                      <div style={{
+                        width: 22, height: 22, borderRadius: 11, background: "white",
+                        position: "absolute", top: 3, left: isOn ? 23 : 3,
+                        transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      }} />
                     </div>
                   </div>
-                ) : field.type === "textarea" ? (
+                ) : isTextarea ? (
                   <>
                     <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
                       {field.label}

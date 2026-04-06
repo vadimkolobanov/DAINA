@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getServices, getPublicConfig, ServiceItem } from "../../api/client";
+import { getServices, ServiceItem } from "../../api/client";
 import { useTelegram } from "../../hooks/useTelegram";
 import StepIndicator from "../../components/StepIndicator";
 import { BookingState } from "../../App";
@@ -13,23 +13,15 @@ interface Props {
 
 export default function ServiceSelect({ booking, setBooking }: Props) {
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const { user, haptic, tg } = useTelegram();
+  const { user, haptic } = useTelegram();
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
-  const [masterUsername, setMasterUsername] = useState("");
-  const [currency, setCurrency] = useState("руб");
 
   useEffect(() => {
     getServices()
       .then(setServices)
       .catch(() => setError(true));
-    getPublicConfig()
-      .then((c) => {
-        setMasterUsername(c.master_username || "");
-        setCurrency(c.currency || "руб");
-      })
-      .catch(() => {});
   }, []);
 
   const selectService = (s: ServiceItem) => {
@@ -75,41 +67,26 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
             <span className="service-card__price">
               {s.old_price && (
                 <span style={{ textDecoration: "line-through", opacity: 0.5, marginRight: 6, fontSize: 14 }}>
-                  {s.old_price} {currency}
+                  {s.old_price} руб
                 </span>
               )}
-              {s.price} {currency}
+              {s.price} руб
             </span>
           </div>
         </motion.div>
       ))}
 
       <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-        <button
-          className="btn btn--secondary"
-          style={{ flex: 1 }}
-          onClick={() => navigate("/my-bookings")}
-        >
+        <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/my-bookings")}>
           📋 Мои записи
         </button>
-        <button
-          className="btn btn--secondary"
-          style={{ flex: 1 }}
-          onClick={() => navigate("/gallery")}
-        >
+        <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/gallery")}>
           🖼 Галерея
         </button>
-      </div>
-
-      {masterUsername && (
-        <button
-          className="btn btn--secondary"
-          style={{ marginTop: 8 }}
-          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
-        >
-          ✈️ Написать мастеру
+        <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/contacts")}>
+          📞 Контакты
         </button>
-      )}
+      </div>
     </div>
   );
 }

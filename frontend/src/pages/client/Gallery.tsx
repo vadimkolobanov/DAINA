@@ -26,7 +26,7 @@ export default function Gallery() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        Наши работы
+        Мои работы
       </motion.h1>
 
       <motion.div
@@ -37,9 +37,7 @@ export default function Gallery() {
       >
         <div style={{ fontSize: 48, marginBottom: 12 }}>💅</div>
         <div style={{ fontSize: 15, color: "var(--tg-theme-hint-color)", lineHeight: 1.5, marginBottom: 16 }}>
-          Смотрите наши работы в Instagram!
-          <br />
-          Там вы найдёте примеры дизайнов, отзывы клиентов и вдохновение для вашего маникюра.
+          Примеры работ, дизайны и отзывы клиентов — всё в Instagram!
         </div>
         <button
           className="btn btn--primary"

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTelegram } from "../../hooks/useTelegram";
-import { getClientBookings, getClientByTelegram, cancelBookingByClient, getPublicConfig } from "../../api/client";
+import { getClientBookings, getClientByTelegram, cancelBookingByClient } from "../../api/client";
 
 interface BookingItem {
   id: number;
@@ -39,7 +39,6 @@ export default function MyBookings() {
   const [error, setError] = useState(false);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
-  const [masterUsername, setMasterUsername] = useState("");
 
   const loadBookings = () => {
     if (!user) return;
@@ -64,9 +63,6 @@ export default function MyBookings() {
     tg?.BackButton?.show();
     const back = () => navigate("/");
     tg?.BackButton?.onClick(back);
-    getPublicConfig()
-      .then((c) => setMasterUsername(c.master_username || ""))
-      .catch(() => {});
     return () => {
       tg?.BackButton?.offClick(back);
       tg?.BackButton?.hide();
@@ -166,23 +162,14 @@ export default function MyBookings() {
         </motion.div>
       ))}
 
-      {masterUsername && (
-        <button
-          className="btn btn--secondary"
-          style={{ marginTop: 16 }}
-          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
-        >
-          ✈️ Написать мастеру
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/contacts")}>
+          📞 Контакты мастера
         </button>
-      )}
-
-      <button
-        className="btn btn--secondary"
-        style={{ marginTop: 8 }}
-        onClick={() => navigate("/")}
-      >
-        Назад к услугам
-      </button>
+        <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/")}>
+          Назад к услугам
+        </button>
+      </div>
     </div>
   );
 }

@@ -17,6 +17,7 @@ import Statistics from "./pages/admin/Statistics";
 import Settings from "./pages/admin/Settings";
 import AdminServices from "./pages/admin/Services";
 import Gallery from "./pages/client/Gallery";
+import MasterContacts from "./pages/client/MasterContacts";
 import { useEffect, useState } from "react";
 
 export interface BookingState {
@@ -156,6 +157,7 @@ export default function App() {
         <Route path="/success" element={<BookingSuccess booking={booking} />} />
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/gallery" element={<Gallery />} />
+        <Route path="/contacts" element={<MasterContacts />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>

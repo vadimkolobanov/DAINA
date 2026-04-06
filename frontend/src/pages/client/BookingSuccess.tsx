@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import ConfettiAnimation from "../../components/ConfettiAnimation";
 import { useTelegram } from "../../hooks/useTelegram";
-import { getPublicConfig } from "../../api/client";
 import { BookingState } from "../../App";
 
 interface Props {
@@ -10,14 +10,11 @@ interface Props {
 }
 
 export default function BookingSuccess({ booking }: Props) {
-  const { close, tg } = useTelegram();
-  const [masterUsername, setMasterUsername] = useState("");
+  const { close } = useTelegram();
+  const navigate = useNavigate();
 
   useEffect(() => {
     try { sessionStorage.removeItem("daina_booking"); } catch {}
-    getPublicConfig()
-      .then((c) => setMasterUsername(c.master_username || ""))
-      .catch(() => {});
   }, []);
 
   const dateFormatted = booking.date
@@ -90,24 +87,22 @@ export default function BookingSuccess({ booking }: Props) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
       >
-        Мастер подтвердит вашу запись в ближайшее время.
+        Мастер подтвердит запись в ближайшее время.
         <br />
-        Я напомню вам за 24 часа и за 2 часа до визита.
+        Напомню вам за 24 часа и за 2 часа до визита.
       </motion.p>
 
-      {masterUsername && (
-        <motion.button
-          className="btn btn--secondary"
-          style={{ marginBottom: 12 }}
-          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          ✈️ Написать мастеру
-        </motion.button>
-      )}
+      <motion.button
+        className="btn btn--secondary"
+        style={{ marginBottom: 12 }}
+        onClick={() => navigate("/contacts")}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.7 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        📞 Контакты мастера
+      </motion.button>
 
       <motion.button
         className="btn btn--primary"

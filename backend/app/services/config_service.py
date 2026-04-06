@@ -8,20 +8,29 @@ from app.models.app_config import AppConfig
 
 # Keys that can be managed via admin panel
 CONFIGURABLE_KEYS = {
-    "admin_ids",       # comma-separated telegram IDs with admin access
-    "bot_username",    # bot username for deeplinks
-    "app_name",        # studio display name
-    "master_name",     # master's name
-    "studio_address",  # studio address
-    "studio_map_url",  # map link
-    "correction_days", # days until correction reminder
-    "reminder_24h",    # enable 24h reminders
-    "reminder_2h",     # enable 2h reminders
-    "followup_enabled", # enable post-visit followups
-    "care_tips",       # care tips sent to client after completed visit
-    "slot_interval",   # minutes between booking slots (default 30)
-    "master_username", # master's telegram username for "Write to master" button
-    "currency",        # currency symbol (default "руб")
+    # Studio
+    "app_name",
+    "studio_address",
+    "studio_map_url",
+    "currency",
+    # Master
+    "master_name",
+    "master_username",
+    "master_phone",
+    "master_instagram",
+    # Bot
+    "bot_username",
+    "admin_ids",
+    # Schedule
+    "slot_interval",
+    "correction_days",
+    # Notifications
+    "reminder_24h",
+    "reminder_2h",
+    "followup_enabled",
+    # Texts
+    "care_tips",
+    "vip_message",
 }
 
 # Default values sourced from env settings
@@ -30,6 +39,9 @@ _ENV_DEFAULTS = {
     "bot_username": lambda: settings.BOT_USERNAME,
     "app_name": lambda: settings.APP_NAME,
     "master_name": lambda: settings.MASTER_NAME,
+    "master_username": lambda: "",
+    "master_phone": lambda: "",
+    "master_instagram": lambda: "glodia_nails_brest",
     "studio_address": lambda: settings.STUDIO_ADDRESS,
     "studio_map_url": lambda: settings.STUDIO_MAP_URL,
     "correction_days": lambda: str(settings.CORRECTION_DAYS),
@@ -37,13 +49,17 @@ _ENV_DEFAULTS = {
     "reminder_2h": lambda: str(settings.REMINDER_2H).lower(),
     "followup_enabled": lambda: str(settings.FOLLOWUP_ENABLED).lower(),
     "slot_interval": lambda: "30",
-    "master_username": lambda: "",
     "currency": lambda: "руб",
     "care_tips": lambda: (
         "Первые 2-3 часа избегайте контакта с водой\n"
         "Не используйте ацетонсодержащие средства\n"
         "Наносите масло для кутикулы ежедневно\n"
         "Используйте перчатки при уборке и мытье посуды"
+    ),
+    "vip_message": lambda: (
+        "Вам присвоен VIP-статус! 💎\n"
+        "Теперь вы в числе особенных клиентов.\n"
+        "Спасибо за доверие!"
     ),
 }
 

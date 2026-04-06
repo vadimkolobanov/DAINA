@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from app.database import get_session
 from app.services.client_service import ClientService
@@ -152,8 +156,23 @@ async def update_client(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    was_vip = client.is_vip
     for key, value in data.model_dump(exclude_none=True).items():
         setattr(client, key, value)
     await session.commit()
     await session.refresh(client)
+
+    # Notify client if just became VIP
+    if not was_vip and client.is_vip and client.telegram_id:
+        try:
+            from app.bot.bot import bot
+            from app.services.notification_service import NotificationService
+            from app.services.config_service import ConfigService
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
+            await notifier.notify_client_vip(client)
+        except Exception:
+            logger.exception("Failed to send VIP notification to client %s", client.id)
+
     return client
