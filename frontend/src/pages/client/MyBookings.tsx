@@ -30,7 +30,7 @@ const statusEmoji: Record<string, string> = {
 };
 
 export default function MyBookings() {
-  const { user, haptic } = useTelegram();
+  const { user, haptic, tg } = useTelegram();
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [clientId, setClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,13 +158,13 @@ export default function MyBookings() {
       ))}
 
       {masterUsername && (
-        <a
-          href={`tg://resolve?domain=${masterUsername}`}
+        <button
           className="btn btn--secondary"
-          style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: 16 }}
+          style={{ marginTop: 16 }}
+          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
         >
           ✈️ Написать мастеру
-        </a>
+        </button>
       )}
     </div>
   );

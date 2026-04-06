@@ -48,6 +48,8 @@ declare global {
         initData: string;
         colorScheme: "light" | "dark";
         themeParams: Record<string, string>;
+        openTelegramLink: (url: string) => void;
+        openLink: (url: string) => void;
       };
     };
   }

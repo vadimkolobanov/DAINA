@@ -5,7 +5,7 @@ import { useTelegram } from "../../hooks/useTelegram";
 import { getPublicConfig } from "../../api/client";
 
 export default function BookingSuccess() {
-  const { close } = useTelegram();
+  const { close, tg } = useTelegram();
   const [masterUsername, setMasterUsername] = useState("");
 
   useEffect(() => {
@@ -54,17 +54,17 @@ export default function BookingSuccess() {
       </motion.p>
 
       {masterUsername && (
-        <motion.a
-          href={`tg://resolve?domain=${masterUsername}`}
+        <motion.button
           className="btn btn--secondary"
-          style={{ display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}
+          style={{ marginBottom: 12 }}
+          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
           whileTap={{ scale: 0.98 }}
         >
           ✈️ Написать мастеру
-        </motion.a>
+        </motion.button>
       )}
 
       <motion.button

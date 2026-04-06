@@ -13,7 +13,7 @@ interface Props {
 
 export default function ServiceSelect({ booking, setBooking }: Props) {
   const [services, setServices] = useState<ServiceItem[]>([]);
-  const { user, haptic } = useTelegram();
+  const { user, haptic, tg } = useTelegram();
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
@@ -82,13 +82,13 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
           📋 Мои записи
         </button>
         {masterUsername && (
-          <a
-            href={`tg://resolve?domain=${masterUsername}`}
+          <button
             className="btn btn--secondary"
-            style={{ flex: 1, display: "block", textAlign: "center", textDecoration: "none" }}
+            style={{ flex: 1 }}
+            onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
           >
             ✈️ Написать мастеру
-          </a>
+          </button>
         )}
       </div>
     </div>
