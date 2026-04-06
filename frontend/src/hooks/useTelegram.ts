@@ -50,6 +50,7 @@ declare global {
         themeParams: Record<string, string>;
         openTelegramLink: (url: string) => void;
         openLink: (url: string) => void;
+        showAlert: (message: string, callback?: () => void) => void;
       };
     };
   }

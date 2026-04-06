@@ -140,32 +140,40 @@ export default function ClientCard() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, alignItems: "center" }}>
           {client.phone && (
-            <a
-              href={`tel:${client.phone}`}
-              style={{ fontSize: 15, color: "var(--accent-dark)", textDecoration: "none", fontWeight: 500 }}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(client.phone!);
+                const tg = window.Telegram?.WebApp;
+                if (tg?.showAlert) tg.showAlert(`Скопировано: ${client.phone}`);
+              }}
+              style={{ fontSize: 15, color: "var(--accent-dark)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
               📞 {client.phone}
-            </a>
+            </button>
           )}
           {client.instagram_handle && (
-            <a
-              href={`https://instagram.com/${client.instagram_handle}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 15, color: "var(--accent-dark)", textDecoration: "none", fontWeight: 500 }}
+            <button
+              onClick={() => {
+                const tg = window.Telegram?.WebApp;
+                if (tg?.openLink) tg.openLink(`https://instagram.com/${client.instagram_handle}`);
+                else window.open(`https://instagram.com/${client.instagram_handle}`, "_blank");
+              }}
+              style={{ fontSize: 15, color: "var(--accent-dark)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
               📷 @{client.instagram_handle}
-            </a>
+            </button>
           )}
           {client.username && (
-            <a
-              href={`https://t.me/${client.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 15, color: "var(--accent-dark)", textDecoration: "none", fontWeight: 500 }}
+            <button
+              onClick={() => {
+                const tg = window.Telegram?.WebApp;
+                if (tg?.openTelegramLink) tg.openTelegramLink(`https://t.me/${client.username}`);
+                else window.open(`https://t.me/${client.username}`, "_blank");
+              }}
+              style={{ fontSize: 15, color: "var(--accent-dark)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}
             >
               ✈️ @{client.username}
-            </a>
+            </button>
           )}
         </div>
 

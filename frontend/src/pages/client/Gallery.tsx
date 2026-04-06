@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useTelegram } from "../../hooks/useTelegram";
 import { useEffect } from "react";
 
+const INSTAGRAM_URL = "https://www.instagram.com/glodia_nails_brest?utm_source=telegram&utm_medium=miniapp&utm_campaign=gallery";
+
 export default function Gallery() {
   const navigate = useNavigate();
   const { tg } = useTelegram();
@@ -33,12 +35,18 @@ export default function Gallery() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🖼</div>
-        <div style={{ fontSize: 15, color: "var(--tg-theme-hint-color)", lineHeight: 1.5 }}>
-          Галерея работ скоро появится!
+        <div style={{ fontSize: 48, marginBottom: 12 }}>💅</div>
+        <div style={{ fontSize: 15, color: "var(--tg-theme-hint-color)", lineHeight: 1.5, marginBottom: 16 }}>
+          Смотрите наши работы в Instagram!
           <br />
-          Следите за обновлениями в Instagram.
+          Там вы найдёте примеры дизайнов, отзывы клиентов и вдохновение для вашего маникюра.
         </div>
+        <button
+          className="btn btn--primary"
+          onClick={() => tg?.openLink(INSTAGRAM_URL)}
+        >
+          📷 Открыть Instagram
+        </button>
       </motion.div>
 
       <button

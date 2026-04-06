@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import StepIndicator from "../../components/StepIndicator";
 import { useTelegram } from "../../hooks/useTelegram";
-import { createBooking, getClientByTelegram } from "../../api/client";
+import { createBooking, getClientByTelegram, getPublicConfig } from "../../api/client";
 import { BookingState } from "../../App";
 import { useEffect, useState } from "react";
 
@@ -15,6 +15,8 @@ export default function Confirmation({ booking }: Props) {
   const { user, hapticSuccess, tg } = useTelegram();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [address, setAddress] = useState("");
+  const [mapUrl, setMapUrl] = useState("");
 
   useEffect(() => {
     if (!booking.time) {
@@ -23,6 +25,12 @@ export default function Confirmation({ booking }: Props) {
     tg?.BackButton?.show();
     const back = () => navigate("/time");
     tg?.BackButton?.onClick(back);
+    getPublicConfig()
+      .then((c) => {
+        setAddress(c.studio_address || "");
+        setMapUrl((c as any).studio_map_url || "");
+      })
+      .catch(() => {});
     return () => {
       tg?.BackButton?.offClick(back);
       tg?.BackButton?.hide();
@@ -101,6 +109,19 @@ export default function Confirmation({ booking }: Props) {
             {booking.servicePrice.toLocaleString()} руб
           </span>
         </div>
+
+        {address && (
+          <div className="confirmation__row">
+            <span className="confirmation__label">Адрес</span>
+            <span
+              className="confirmation__value"
+              style={mapUrl ? { color: "var(--accent-dark)", cursor: "pointer" } : {}}
+              onClick={() => mapUrl && tg?.openLink(mapUrl)}
+            >
+              📍 {address}
+            </span>
+          </div>
+        )}
 
         {error && (
           <div className="hint" style={{ color: "var(--danger)", marginTop: 16 }}>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTelegram } from "../../hooks/useTelegram";
 import { getClientBookings, getClientByTelegram, cancelBookingByClient, getPublicConfig } from "../../api/client";
@@ -31,6 +32,7 @@ const statusEmoji: Record<string, string> = {
 
 export default function MyBookings() {
   const { user, haptic, tg } = useTelegram();
+  const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [clientId, setClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,9 +61,16 @@ export default function MyBookings() {
   useEffect(loadBookings, [user]);
 
   useEffect(() => {
+    tg?.BackButton?.show();
+    const back = () => navigate("/");
+    tg?.BackButton?.onClick(back);
     getPublicConfig()
       .then((c) => setMasterUsername(c.master_username || ""))
       .catch(() => {});
+    return () => {
+      tg?.BackButton?.offClick(back);
+      tg?.BackButton?.hide();
+    };
   }, []);
 
   const handleCancel = async (bookingId: number) => {
@@ -166,6 +175,14 @@ export default function MyBookings() {
           ✈️ Написать мастеру
         </button>
       )}
+
+      <button
+        className="btn btn--secondary"
+        style={{ marginTop: 8 }}
+        onClick={() => navigate("/")}
+      >
+        Назад к услугам
+      </button>
     </div>
   );
 }
