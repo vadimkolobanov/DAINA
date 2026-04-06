@@ -28,16 +28,28 @@ export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: P
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
     setLoading(true);
-    getAvailableSlots(date, serviceId).then((data) => {
-      setSlots(data);
-      setLoading(false);
-    });
+    setError(false);
+    getAvailableSlots(date, serviceId)
+      .then((data) => {
+        setSlots(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+        setError(true);
+      });
   }, [date, serviceId]);
 
   if (loading) {
     return <div className="hint">Загружаю доступное время...</div>;
+  }
+
+  if (error) {
+    return <div className="hint">Не удалось загрузить слоты. Попробуйте позже.</div>;
   }
 
   if (slots.length === 0) {

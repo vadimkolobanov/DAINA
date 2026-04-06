@@ -1,9 +1,23 @@
 const API_BASE = "/api";
 
+// Auth context — set by the app once telegram user is known
+let _authHeaders: Record<string, string> = {};
+
+export function setAuthContext(telegramId: number, initData?: string) {
+  _authHeaders = { "X-Telegram-User-Id": String(telegramId) };
+  if (initData) {
+    _authHeaders["X-Telegram-Init-Data"] = initData;
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ..._authHeaders,
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
     throw new Error(`API error: ${res.status}`);
@@ -91,6 +105,15 @@ export const getClients = (filter?: string, q?: string) => {
   return request<ClientItem[]>(`/clients?${params}`);
 };
 
+export const updateClient = (clientId: number, data: Record<string, any>) =>
+  request<ClientItem>(`/clients/${clientId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export const getClientDetail = (clientId: number) =>
+  request<any>(`/clients/${clientId}`);
+
 export const createClientFromInstagram = (data: {
   instagram_handle: string;
   name?: string;
@@ -112,6 +135,49 @@ export const updateScheduleDay = (data: ScheduleDay) =>
   request("/schedule/day", { method: "PUT", body: JSON.stringify(data) });
 
 // Admin
-export const getDashboard = () => request<any>("/admin/dashboard");
+export const getDashboard = (targetDate?: string) =>
+  request<any>(targetDate ? `/admin/dashboard?target_date=${targetDate}` : "/admin/dashboard");
 export const getStats = (period?: string) =>
   request<any>(`/admin/stats?period=${period || "month"}`);
+
+export const getAllBookings = (status?: string) => {
+  const params = status && status !== "all" ? `?status=${status}` : "";
+  return request<any[]>(`/admin/all-bookings${params}`);
+};
+
+export const deleteBooking = (bookingId: number) =>
+  request(`/admin/booking/${bookingId}`, { method: "DELETE" });
+
+export const deleteClientApi = (clientId: number) =>
+  request(`/admin/client/${clientId}`, { method: "DELETE" });
+
+// Config
+export interface PublicConfig {
+  app_name: string;
+  bot_username: string;
+  studio_address: string;
+}
+
+export const getPublicConfig = () => request<PublicConfig>("/config/public");
+
+export const checkAdmin = (telegramId: number, initData?: string) => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Telegram-User-Id": String(telegramId),
+  };
+  if (initData) {
+    headers["X-Telegram-Init-Data"] = initData;
+  }
+  return fetch(`${API_BASE}/config/check-admin`, { headers }).then((r) =>
+    r.ok ? r.json() : { is_admin: false }
+  ) as Promise<{ is_admin: boolean; telegram_id?: number }>;
+};
+
+export const getAdminConfig = () =>
+  request<Record<string, string>>("/config");
+
+export const updateAdminConfig = (values: Record<string, string>) =>
+  request("/config", {
+    method: "PUT",
+    body: JSON.stringify({ values }),
+  });

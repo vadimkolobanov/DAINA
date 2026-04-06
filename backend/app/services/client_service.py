@@ -93,7 +93,7 @@ class ClientService:
     ) -> Client:
         """Create a placeholder client from Instagram (before they join Telegram)."""
         client = Client(
-            telegram_id=0,  # will be updated when they join via deeplink
+            telegram_id=None,  # will be updated when they join via deeplink
             first_name=name or instagram_handle,
             instagram_handle=instagram_handle,
             phone=phone,

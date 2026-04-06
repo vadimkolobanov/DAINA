@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getStats } from "../../api/client";
 
 interface Stats {
   period: string;
@@ -22,12 +23,16 @@ export default function Statistics() {
   const [period, setPeriod] = useState("month");
   const navigate = useNavigate();
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    fetch(`/api/admin/stats?period=${period}`)
-      .then((r) => r.json())
-      .then(setStats);
+    setError(false);
+    getStats(period)
+      .then(setStats)
+      .catch(() => setError(true));
   }, [period]);
 
+  if (error) return <div className="hint">Не удалось загрузить статистику</div>;
   if (!stats) return <div className="hint">Загрузка...</div>;
 
   return (

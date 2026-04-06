@@ -33,6 +33,7 @@ export default function MyBookings() {
   const { user } = useTelegram();
   const [bookings, setBookings] = useState<BookingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -42,10 +43,14 @@ export default function MyBookings() {
         setBookings(data as BookingItem[]);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        setError(true);
+      });
   }, [user]);
 
   if (loading) return <div className="hint">Загрузка...</div>;
+  if (error) return <div className="hint">Не удалось загрузить записи</div>;
 
   return (
     <div>

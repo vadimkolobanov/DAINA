@@ -1,6 +1,6 @@
 from datetime import date, time
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,9 +43,16 @@ async def get_schedule(session: AsyncSession = Depends(get_session)):
 @router.put("/day")
 async def update_schedule_day(data: ScheduleDay, session: AsyncSession = Depends(get_session)):
     svc = ScheduleService(session)
-    h1, m1 = map(int, data.time_start.split(":"))
-    h2, m2 = map(int, data.time_end.split(":"))
-    await svc.update_day(data.day_of_week, data.is_working, time(h1, m1), time(h2, m2))
+    try:
+        h1, m1 = map(int, data.time_start.split(":"))
+        h2, m2 = map(int, data.time_end.split(":"))
+        t_start = time(h1, m1)
+        t_end = time(h2, m2)
+    except (ValueError, IndexError):
+        raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
+    if t_start >= t_end:
+        raise HTTPException(status_code=400, detail="time_start must be before time_end")
+    await svc.update_day(data.day_of_week, data.is_working, t_start, t_end)
     return {"ok": True}
 
 
@@ -54,12 +61,17 @@ async def add_exception(data: ExceptionCreate, session: AsyncSession = Depends(g
     svc = ScheduleService(session)
     custom_start = None
     custom_end = None
-    if data.custom_start:
-        h, m = map(int, data.custom_start.split(":"))
-        custom_start = time(h, m)
-    if data.custom_end:
-        h, m = map(int, data.custom_end.split(":"))
-        custom_end = time(h, m)
+    try:
+        if data.custom_start:
+            h, m = map(int, data.custom_start.split(":"))
+            custom_start = time(h, m)
+        if data.custom_end:
+            h, m = map(int, data.custom_end.split(":"))
+            custom_end = time(h, m)
+    except (ValueError, IndexError):
+        raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
+    if custom_start and custom_end and custom_start >= custom_end:
+        raise HTTPException(status_code=400, detail="custom_start must be before custom_end")
     await svc.add_exception(data.date, data.is_day_off, custom_start, custom_end, data.reason)
     return {"ok": True}
 

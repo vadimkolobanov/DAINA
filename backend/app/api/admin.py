@@ -5,11 +5,13 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
+from app.dependencies import require_admin
 from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
+from app.models.client_photo import ClientPhoto
 from app.models.service import Service
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 
 @router.get("/stats")
@@ -153,7 +155,10 @@ async def get_all_bookings(
     if end:
         stmt = stmt.where(Booking.date <= end)
     if status:
-        stmt = stmt.where(Booking.status == BookingStatus(status))
+        try:
+            stmt = stmt.where(Booking.status == BookingStatus(status))
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
 
     result = await session.execute(stmt)
     bookings = result.scalars().all()
@@ -188,17 +193,25 @@ async def delete_booking(booking_id: int, session: AsyncSession = Depends(get_se
 
 @router.delete("/client/{client_id}")
 async def delete_client(client_id: int, session: AsyncSession = Depends(get_session)):
-    # Delete client's bookings first
+    result = await session.execute(select(Client).where(Client.id == client_id))
+    client = result.scalar_one_or_none()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Delete client's photos first
+    photos = await session.execute(
+        select(ClientPhoto).where(ClientPhoto.client_id == client_id)
+    )
+    for p in photos.scalars().all():
+        await session.delete(p)
+
+    # Delete client's bookings
     bookings = await session.execute(
         select(Booking).where(Booking.client_id == client_id)
     )
     for b in bookings.scalars().all():
         await session.delete(b)
 
-    result = await session.execute(select(Client).where(Client.id == client_id))
-    client = result.scalar_one_or_none()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
     await session.delete(client)
     await session.commit()
     return {"ok": True}

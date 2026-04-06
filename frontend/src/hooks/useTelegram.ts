@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { checkAdmin } from "../api/client";
 
 declare global {
   interface Window {
@@ -54,6 +55,8 @@ declare global {
 
 export function useTelegram() {
   const tg = useMemo(() => window.Telegram?.WebApp, []);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
 
   useEffect(() => {
     tg?.ready();
@@ -62,7 +65,29 @@ export function useTelegram() {
 
   const user = tg?.initDataUnsafe?.user;
   const startParam = tg?.initDataUnsafe?.start_param;
-  const isAdmin = startParam === "admin" || new URLSearchParams(window.location.search).get("mode") === "admin";
+  const initData = tg?.initData;
+
+  // Validate admin access via server
+  useEffect(() => {
+    if (!user) {
+      setAdminChecked(true);
+      return;
+    }
+    // Only check if start_param hints at admin (optimization)
+    if (startParam !== "admin") {
+      setAdminChecked(true);
+      return;
+    }
+    checkAdmin(user.id, initData)
+      .then((result) => {
+        setIsAdmin(result.is_admin);
+        setAdminChecked(true);
+      })
+      .catch(() => {
+        setIsAdmin(false);
+        setAdminChecked(true);
+      });
+  }, [user, startParam, initData]);
 
   const haptic = useCallback(
     (type: "light" | "medium" | "heavy" = "light") => {
@@ -87,7 +112,9 @@ export function useTelegram() {
     tg,
     user,
     startParam,
+    initData,
     isAdmin,
+    adminChecked,
     haptic,
     hapticSuccess,
     hapticError,

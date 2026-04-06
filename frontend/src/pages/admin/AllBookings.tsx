@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getAllBookings } from "../../api/client";
 
 interface BookingItem {
   id: number;
@@ -36,11 +37,13 @@ export default function AllBookings() {
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    const params = filter !== "all" ? `?status=${filter}` : "";
-    fetch(`/api/admin/all-bookings${params}`)
-      .then((r) => r.json())
-      .then(setBookings);
+    setError(false);
+    getAllBookings(filter)
+      .then(setBookings)
+      .catch(() => setError(true));
   }, [filter]);
 
   const filters = [
@@ -67,7 +70,8 @@ export default function AllBookings() {
         ))}
       </div>
 
-      {bookings.length === 0 && <div className="hint">Нет записей</div>}
+      {error && <div className="hint">Не удалось загрузить записи</div>}
+      {!error && bookings.length === 0 && <div className="hint">Нет записей</div>}
 
       {bookings.map((b, i) => (
         <motion.div

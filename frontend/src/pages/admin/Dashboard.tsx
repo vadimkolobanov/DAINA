@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getDashboard } from "../../api/client";
 
 interface DashboardBooking {
   id: number;
@@ -34,10 +35,13 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const navigate = useNavigate();
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    fetch(`/api/admin/dashboard?target_date=${selectedDate}`)
-      .then((r) => r.json())
-      .then(setData);
+    setError(false);
+    getDashboard(selectedDate)
+      .then(setData)
+      .catch(() => setError(true));
   }, [selectedDate]);
 
   const changeDate = (delta: number) => {
@@ -82,7 +86,9 @@ export default function Dashboard() {
         <button className="calendar__nav" onClick={() => changeDate(1)} style={{ fontSize: 24 }}>&#8250;</button>
       </div>
 
-      {!data ? (
+      {error ? (
+        <div className="hint">Не удалось загрузить данные</div>
+      ) : !data ? (
         <div className="hint">Загрузка...</div>
       ) : (
         <>
@@ -142,13 +148,22 @@ export default function Dashboard() {
           ))}
 
           {/* All bookings link */}
-          <button
-            className="btn btn--secondary"
-            style={{ marginTop: 16 }}
-            onClick={() => navigate("/all-bookings")}
-          >
-            Все записи
-          </button>
+          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+            <button
+              className="btn btn--secondary"
+              style={{ flex: 1 }}
+              onClick={() => navigate("/all-bookings")}
+            >
+              Все записи
+            </button>
+            <button
+              className="btn btn--secondary"
+              style={{ flex: 1 }}
+              onClick={() => navigate("/settings")}
+            >
+              Настройки
+            </button>
+          </div>
         </>
       )}
 

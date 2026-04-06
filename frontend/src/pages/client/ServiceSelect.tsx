@@ -16,8 +16,12 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
   const { user, haptic } = useTelegram();
   const navigate = useNavigate();
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    getServices().then(setServices);
+    getServices()
+      .then(setServices)
+      .catch(() => setError(true));
   }, []);
 
   const selectService = (s: ServiceItem) => {
@@ -43,6 +47,8 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
         {user ? `${user.first_name}, выберите услугу` : "Выберите услугу"}
       </motion.h1>
       <p className="page-subtitle">Нажмите на карточку, чтобы продолжить</p>
+
+      {error && <div className="hint">Не удалось загрузить услуги. Попробуйте позже.</div>}
 
       {services.map((s, i) => (
         <motion.div

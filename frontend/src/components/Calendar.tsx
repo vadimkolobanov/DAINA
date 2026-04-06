@@ -25,11 +25,13 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
   useEffect(() => {
     const start = new Date(year, month, 1);
     const end = new Date(year, month + 1, 0);
+    let cancelled = false;
     getAvailableDates(
       serviceId,
       start.toISOString().split("T")[0],
       end.toISOString().split("T")[0]
     ).then((dates) => {
+      if (cancelled) return;
       const map: Record<string, DateAvailability> = {};
       let nearest: string | null = null;
       for (const d of dates) {
@@ -40,7 +42,8 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
       }
       setAvailability(map);
       setNearestFree(nearest);
-    });
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, [month, year, serviceId]);
 
   const firstDay = new Date(year, month, 1).getDay();

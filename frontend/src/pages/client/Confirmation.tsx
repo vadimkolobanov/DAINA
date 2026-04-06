@@ -14,6 +14,7 @@ export default function Confirmation({ booking }: Props) {
   const navigate = useNavigate();
   const { user, hapticSuccess, tg } = useTelegram();
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!booking.time) {
@@ -46,6 +47,7 @@ export default function Confirmation({ booking }: Props) {
   const handleConfirm = async () => {
     if (submitting || !user) return;
     setSubmitting(true);
+    setError("");
     try {
       // First get or create the client from the API
       const res = await fetch(`/api/clients/telegram/${user.id}`);
@@ -54,8 +56,7 @@ export default function Confirmation({ booking }: Props) {
         const client = await res.json();
         clientId = client.id;
       } else {
-        // Client doesn't exist yet in DB — this shouldn't happen if bot /start ran,
-        // but handle gracefully
+        setError("Сначала запустите бота командой /start");
         setSubmitting(false);
         return;
       }
@@ -69,6 +70,7 @@ export default function Confirmation({ booking }: Props) {
       hapticSuccess();
       navigate("/success");
     } catch {
+      setError("Не удалось создать запись. Попробуйте ещё раз.");
       setSubmitting(false);
     }
   };
@@ -101,6 +103,12 @@ export default function Confirmation({ booking }: Props) {
             {booking.servicePrice.toLocaleString()}₽
           </span>
         </div>
+
+        {error && (
+          <div className="hint" style={{ color: "var(--danger)", marginTop: 16 }}>
+            {error}
+          </div>
+        )}
 
         <div style={{ marginTop: 24 }}>
           <button

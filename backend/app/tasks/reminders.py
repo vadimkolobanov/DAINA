@@ -14,12 +14,16 @@ async def check_reminders():
     notifier = NotificationService(bot)
 
     async with async_session() as session:
-        # 24-hour reminders
-        tomorrow = now + timedelta(hours=24)
+        # 24-hour reminders: send for bookings happening 23h45m..24h15m from now
+        reminder_24h_start = now + timedelta(hours=24) - timedelta(minutes=15)
+        reminder_24h_end = now + timedelta(hours=24) + timedelta(minutes=15)
+
+        # Query bookings on the target date(s)
+        target_dates_24h = {reminder_24h_start.date(), reminder_24h_end.date()}
         result = await session.execute(
             select(Booking).where(
                 and_(
-                    Booking.date == tomorrow.date(),
+                    Booking.date.in_(target_dates_24h),
                     Booking.status == BookingStatus.CONFIRMED,
                     Booking.reminder_24h_sent == False,
                 )
@@ -27,16 +31,22 @@ async def check_reminders():
         )
         for booking in result.scalars().all():
             booking_dt = datetime.combine(booking.date, booking.time_start)
-            if abs((booking_dt - tomorrow).total_seconds()) < 900:  # within 15 min
-                await notifier.send_reminder_24h(booking)
-                booking.reminder_24h_sent = True
+            if reminder_24h_start <= booking_dt <= reminder_24h_end:
+                try:
+                    await notifier.send_reminder_24h(booking)
+                    booking.reminder_24h_sent = True
+                except Exception:
+                    pass
 
-        # 2-hour reminders
-        in_2h = now + timedelta(hours=2)
+        # 2-hour reminders: send for bookings happening 1h45m..2h15m from now
+        reminder_2h_start = now + timedelta(hours=2) - timedelta(minutes=15)
+        reminder_2h_end = now + timedelta(hours=2) + timedelta(minutes=15)
+
+        target_dates_2h = {reminder_2h_start.date(), reminder_2h_end.date()}
         result = await session.execute(
             select(Booking).where(
                 and_(
-                    Booking.date == in_2h.date(),
+                    Booking.date.in_(target_dates_2h),
                     Booking.status == BookingStatus.CONFIRMED,
                     Booking.reminder_2h_sent == False,
                 )
@@ -44,9 +54,12 @@ async def check_reminders():
         )
         for booking in result.scalars().all():
             booking_dt = datetime.combine(booking.date, booking.time_start)
-            if abs((booking_dt - in_2h).total_seconds()) < 900:
-                await notifier.send_reminder_2h(booking)
-                booking.reminder_2h_sent = True
+            if reminder_2h_start <= booking_dt <= reminder_2h_end:
+                try:
+                    await notifier.send_reminder_2h(booking)
+                    booking.reminder_2h_sent = True
+                except Exception:
+                    pass
 
         await session.commit()
 

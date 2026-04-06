@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, time
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,8 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_session
 from app.models.booking import Booking, BookingStatus
+from app.models.client import Client
 from app.models.service import Service
 from app.services.booking_service import BookingService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -79,13 +83,26 @@ async def get_available_dates(
 
 @router.post("", response_model=BookingResponse)
 async def create_booking(data: BookingCreate, session: AsyncSession = Depends(get_session)):
+    # Validate client exists
+    client_result = await session.execute(select(Client).where(Client.id == data.client_id))
+    if not client_result.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Client not found")
+
     result = await session.execute(select(Service).where(Service.id == data.service_id))
     service = result.scalar_one_or_none()
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    h, m = map(int, data.time.split(":"))
-    target_time = time(h, m)
+    # Validate date is not in the past
+    if data.date < date.today():
+        raise HTTPException(status_code=400, detail="Cannot book a date in the past")
+
+    # Validate time format
+    try:
+        h, m = map(int, data.time.split(":"))
+        target_time = time(h, m)
+    except (ValueError, IndexError):
+        raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
 
     svc = BookingService(session)
     slots = await svc.get_available_slots(data.date, service.duration_minutes)
@@ -103,7 +120,7 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
         notifier = NotificationService(bot)
         await notifier.notify_admin_new_booking(booking)
     except Exception:
-        pass  # Don't fail booking if notification fails
+        logger.exception("Failed to send new booking notification for booking %s", booking.id)
 
     return booking
 
@@ -112,8 +129,12 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
 async def update_booking_status(
     booking_id: int, status: str, session: AsyncSession = Depends(get_session)
 ):
+    try:
+        booking_status = BookingStatus(status)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
     svc = BookingService(session)
-    booking = await svc.update_status(booking_id, BookingStatus(status))
+    booking = await svc.update_status(booking_id, booking_status)
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
     return {"ok": True}

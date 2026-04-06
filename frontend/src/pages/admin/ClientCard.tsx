@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getPublicConfig, getClientDetail, updateClient, updateBookingStatus, deleteBooking, deleteClientApi } from "../../api/client";
 
 interface BookingItem {
   id: number;
@@ -54,56 +55,62 @@ export default function ClientCard() {
   const [notes, setNotes] = useState("");
   const [isVip, setIsVip] = useState(false);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+  const [botUsername, setBotUsername] = useState("DAINANailBot");
   const navigate = useNavigate();
 
+  const [error, setError] = useState(false);
+
   const loadClient = () => {
-    fetch(`/api/clients/${clientId}`)
-      .then((r) => r.json())
+    getClientDetail(Number(clientId))
       .then((data) => {
         setClient(data);
         setNotes(data.notes || "");
         setIsVip(data.is_vip);
-      });
+      })
+      .catch(() => setError(true));
   };
 
   useEffect(loadClient, [clientId]);
 
+  useEffect(() => {
+    getPublicConfig()
+      .then((cfg) => { if (cfg.bot_username) setBotUsername(cfg.bot_username); })
+      .catch(() => {});
+  }, []);
+
   const saveNotes = async () => {
-    await fetch(`/api/clients/${clientId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes }),
-    });
+    await updateClient(Number(clientId), { notes });
     setEditingNotes(false);
     setClient((c) => (c ? { ...c, notes } : c));
   };
 
   const toggleVip = async () => {
     const newVip = !isVip;
-    await fetch(`/api/clients/${clientId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_vip: newVip }),
-    });
+    await updateClient(Number(clientId), { is_vip: newVip });
     setIsVip(newVip);
     setClient((c) => (c ? { ...c, is_vip: newVip } : c));
   };
 
   const changeBookingStatus = async (bookingId: number, status: string) => {
-    await fetch(`/api/bookings/${bookingId}/status?status=${status}`, { method: "PUT" });
+    await updateBookingStatus(bookingId, status);
     loadClient();
   };
 
-  const deleteBooking = async (bookingId: number) => {
-    await fetch(`/api/admin/booking/${bookingId}`, { method: "DELETE" });
+  const handleDeleteBooking = async (bookingId: number) => {
+    await deleteBooking(bookingId);
     loadClient();
   };
 
   const deleteClient = async () => {
-    await fetch(`/api/admin/client/${clientId}`, { method: "DELETE" });
-    navigate("/clients");
+    try {
+      await deleteClientApi(Number(clientId));
+      navigate("/clients");
+    } catch {
+      // stay on page
+    }
   };
 
+  if (error) return <div className="hint">Не удалось загрузить данные клиента</div>;
   if (!client) return <div className="hint">Загрузка...</div>;
 
   const fullName = `${client.first_name} ${client.last_name || ""}`.trim();
@@ -276,7 +283,7 @@ export default function ClientCard() {
               <button
                 className="filter-chip"
                 style={{ fontSize: 11, padding: "4px 10px", color: "var(--danger)" }}
-                onClick={() => deleteBooking(b.id)}
+                onClick={() => handleDeleteBooking(b.id)}
               >
                 Удалить
               </button>
@@ -304,10 +311,10 @@ export default function ClientCard() {
               cursor: "pointer",
             }}
             onClick={() => {
-              navigator.clipboard.writeText(`t.me/DAINANailBot?start=ref_${client.referral_code}`);
+              navigator.clipboard.writeText(`t.me/${botUsername}?start=ref_${client.referral_code}`);
             }}
           >
-            t.me/DAINANailBot?start=ref_{client.referral_code}
+            t.me/${botUsername}?start=ref_{client.referral_code}
             <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)", marginTop: 4 }}>
               Нажмите чтобы скопировать
             </div>

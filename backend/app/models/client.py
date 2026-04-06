@@ -10,7 +10,7 @@ class Client(Base):
     __tablename__ = "clients"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True, nullable=True, index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     username: Mapped[str | None] = mapped_column(String(100), nullable=True)

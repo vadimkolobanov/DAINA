@@ -21,24 +21,32 @@ async def cmd_start(message: Message):
         if len(args) > 1 and args[1].startswith("ref_"):
             referral_code = args[1][4:]  # remove "ref_" prefix
 
-        client, is_new = await svc.get_or_create(
-            telegram_id=message.from_user.id,
-            first_name=message.from_user.first_name,
-            last_name=message.from_user.last_name,
-            username=message.from_user.username,
-        )
-
-        # Link to Instagram profile if came via deeplink
+        # If deeplink points to a pre-created Instagram client, link them first
+        is_new = False
         if referral_code:
             existing = await svc.get_by_referral_code(referral_code)
-            if existing and existing.telegram_id == 0:
-                # This is a pre-created Instagram client — link them
+            if existing and existing.telegram_id is None:
                 existing.telegram_id = message.from_user.id
                 existing.first_name = message.from_user.first_name
                 existing.last_name = message.from_user.last_name
                 existing.username = message.from_user.username
                 await session.commit()
                 client = existing
+                is_new = True
+            else:
+                client, is_new = await svc.get_or_create(
+                    telegram_id=message.from_user.id,
+                    first_name=message.from_user.first_name,
+                    last_name=message.from_user.last_name,
+                    username=message.from_user.username,
+                )
+        else:
+            client, is_new = await svc.get_or_create(
+                telegram_id=message.from_user.id,
+                first_name=message.from_user.first_name,
+                last_name=message.from_user.last_name,
+                username=message.from_user.username,
+            )
 
     if is_new:
         text = (

@@ -4,7 +4,9 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.booking import Booking, BookingStatus
+from app.models.client import Client
 from app.models.schedule import Schedule, ScheduleException
+from app.models.service import Service
 
 
 class BookingService:
@@ -122,7 +124,39 @@ class BookingService:
         booking = result.scalar_one_or_none()
         if not booking:
             return None
+
+        old_status = booking.status
         booking.status = status
+
+        # Update client stats when booking is completed
+        if status == BookingStatus.COMPLETED and old_status != BookingStatus.COMPLETED:
+            client_result = await self.session.execute(
+                select(Client).where(Client.id == booking.client_id)
+            )
+            client = client_result.scalar_one_or_none()
+            if client:
+                service_result = await self.session.execute(
+                    select(Service).where(Service.id == booking.service_id)
+                )
+                service = service_result.scalar_one_or_none()
+                client.visit_count += 1
+                client.total_spent += service.price if service else 0
+                client.last_visit_at = datetime.now()
+
+        # Reverse client stats if un-completing a booking
+        if old_status == BookingStatus.COMPLETED and status != BookingStatus.COMPLETED:
+            client_result = await self.session.execute(
+                select(Client).where(Client.id == booking.client_id)
+            )
+            client = client_result.scalar_one_or_none()
+            if client:
+                service_result = await self.session.execute(
+                    select(Service).where(Service.id == booking.service_id)
+                )
+                service = service_result.scalar_one_or_none()
+                client.visit_count = max(0, client.visit_count - 1)
+                client.total_spent = max(0, client.total_spent - (service.price if service else 0))
+
         await self.session.commit()
         await self.session.refresh(booking)
         return booking
