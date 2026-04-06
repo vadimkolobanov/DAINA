@@ -101,7 +101,7 @@ export const cancelBookingByClient = (bookingId: number, clientId: number) =>
 // Clients
 export interface ClientItem {
   id: number;
-  telegram_id: number;
+  telegram_id: number | null;
   first_name: string;
   last_name: string | null;
   username: string | null;
