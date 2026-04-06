@@ -71,11 +71,15 @@ async def gallery(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("confirm_"))
 async def confirm_booking(callback: CallbackQuery):
     """Admin confirms a booking."""
-    if callback.from_user.id != settings.ADMIN_TELEGRAM_ID:
+    if callback.from_user.id not in settings.get_admin_ids():
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    booking_id = int(callback.data.split("_")[1])
+    try:
+        booking_id = int(callback.data.removeprefix("confirm_"))
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
     async with async_session() as session:
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CONFIRMED)
@@ -92,11 +96,15 @@ async def confirm_booking(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("reject_"))
 async def reject_booking(callback: CallbackQuery):
     """Admin rejects a booking."""
-    if callback.from_user.id != settings.ADMIN_TELEGRAM_ID:
+    if callback.from_user.id not in settings.get_admin_ids():
         await callback.answer("Нет доступа", show_alert=True)
         return
 
-    booking_id = int(callback.data.split("_")[1])
+    try:
+        booking_id = int(callback.data.removeprefix("reject_"))
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
     async with async_session() as session:
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
@@ -123,7 +131,11 @@ async def client_confirm_reminder(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("client_cancel_"))
 async def client_cancel_booking(callback: CallbackQuery):
     """Client cancels booking from reminder."""
-    booking_id = int(callback.data.split("_")[-1])
+    try:
+        booking_id = int(callback.data.removeprefix("client_cancel_"))
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
     async with async_session() as session:
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)

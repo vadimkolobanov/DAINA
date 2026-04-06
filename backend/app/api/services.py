@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,7 +53,9 @@ async def update_service(
     service_id: int, data: ServiceCreate, session: AsyncSession = Depends(get_session)
 ):
     result = await session.execute(select(Service).where(Service.id == service_id))
-    service = result.scalar_one()
+    service = result.scalar_one_or_none()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
     for key, value in data.model_dump().items():
         setattr(service, key, value)
     await session.commit()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -143,7 +143,7 @@ class BookingService:
                 service = service_result.scalar_one_or_none()
                 client.visit_count += 1
                 client.total_spent += service.price if service else 0
-                client.last_visit_at = datetime.now()
+                client.last_visit_at = datetime.now(timezone.utc)
 
         # Reverse client stats if un-completing a booking
         if old_status == BookingStatus.COMPLETED and status != BookingStatus.COMPLETED:
