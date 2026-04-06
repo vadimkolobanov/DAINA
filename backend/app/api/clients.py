@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/clients", tags=["clients"])
 
 class ClientResponse(BaseModel):
     id: int
-    telegram_id: int
+    telegram_id: int | None = None
     first_name: str
     last_name: str | None
     username: str | None
@@ -47,7 +47,7 @@ class ClientUpdate(BaseModel):
 
 class ClientDetailResponse(BaseModel):
     id: int
-    telegram_id: int
+    telegram_id: int | None = None
     first_name: str
     last_name: str | None
     username: str | None
