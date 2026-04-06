@@ -7,6 +7,7 @@ from app.database import async_session
 from app.models.booking import BookingStatus
 from app.services.booking_service import BookingService
 from app.services.client_service import ClientService
+from app.services.config_service import ConfigService
 from app.services.notification_service import NotificationService
 
 router = Router()
@@ -84,7 +85,8 @@ async def confirm_booking(callback: CallbackQuery):
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CONFIRMED)
         if booking:
-            notifier = NotificationService(bot)
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
             await notifier.notify_client_confirmed(booking)
             await callback.message.edit_text(
                 callback.message.text + "\n\n✅ <b>Подтверждено</b>",
@@ -109,7 +111,8 @@ async def reject_booking(callback: CallbackQuery):
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
         if booking:
-            notifier = NotificationService(bot)
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
             await notifier.notify_client_rejected(booking)
             await callback.message.edit_text(
                 callback.message.text + "\n\n❌ <b>Отклонено</b>",
@@ -141,7 +144,6 @@ async def client_cancel_booking(callback: CallbackQuery):
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
         if booking:
             # Notify admin
-            notifier = NotificationService(bot)
             await bot.send_message(
                 settings.ADMIN_TELEGRAM_ID,
                 f"❌ Клиент {booking.client.first_name} отменил запись на "

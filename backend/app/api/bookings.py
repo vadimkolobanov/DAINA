@@ -133,7 +133,8 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     try:
         from app.bot.bot import bot
         from app.services.notification_service import NotificationService
-        notifier = NotificationService(bot)
+        config = await ConfigService(session).get_all()
+        notifier = NotificationService(bot, config)
         await notifier.notify_admin_new_booking(booking)
     except Exception:
         logger.exception("Failed to send new booking notification for booking %s", booking.id)
@@ -158,15 +159,13 @@ async def update_booking_status(
     try:
         from app.bot.bot import bot
         from app.services.notification_service import NotificationService
-        from app.services.config_service import ConfigService
-        notifier = NotificationService(bot)
+        config = await ConfigService(session).get_all()
+        notifier = NotificationService(bot, config)
 
         if booking_status == BookingStatus.CONFIRMED:
             await notifier.notify_client_confirmed(booking)
         elif booking_status == BookingStatus.COMPLETED:
-            config_svc = ConfigService(session)
-            care_tips = await config_svc.get("care_tips")
-            await notifier.notify_client_completed(booking, care_tips)
+            await notifier.notify_client_completed(booking, config.get("care_tips", ""))
         elif booking_status == BookingStatus.CANCELLED:
             await notifier.notify_client_cancelled(booking)
         elif booking_status == BookingStatus.NO_SHOW:

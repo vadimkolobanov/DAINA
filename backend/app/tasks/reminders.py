@@ -6,6 +6,7 @@ from sqlalchemy import and_, select
 from app.bot.bot import bot
 from app.database import async_session
 from app.models.booking import Booking, BookingStatus
+from app.services.config_service import ConfigService
 from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
@@ -14,10 +15,11 @@ logger = logging.getLogger(__name__)
 async def check_reminders():
     """Check and send booking reminders. Run every 15 minutes."""
     now = datetime.now()
-    notifier = NotificationService(bot)
 
     try:
         async with async_session() as session:
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
             # 24-hour reminders: send for bookings happening 23h45m..24h15m from now
             reminder_24h_start = now + timedelta(hours=24) - timedelta(minutes=15)
             reminder_24h_end = now + timedelta(hours=24) + timedelta(minutes=15)
@@ -74,10 +76,11 @@ async def check_followups():
     """Check and send post-visit follow-ups. Run every 30 minutes."""
     now = datetime.now()
     two_hours_ago = now - timedelta(hours=2)
-    notifier = NotificationService(bot)
 
     try:
         async with async_session() as session:
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
             result = await session.execute(
                 select(Booking).where(
                     and_(

@@ -37,34 +37,42 @@ async def init_db():
     from sqlalchemy import select, func
     from app.models.service import Service
 
+    # Seed or update default services
+    defaults = [
+        {
+            "sort_order": 1,
+            "name": "Гигиенический маникюр",
+            "description": "Коррекция формы, удаление ножницами кутикулы и её шлифовка, очистка боковых валиков, удаление заусенцев, увлажнение кожи рук и зоны кутикулы маслом.",
+            "duration_minutes": 40,
+            "price": 30,
+        },
+        {
+            "sort_order": 2,
+            "name": "Аппаратный маникюр + японский уход",
+            "description": "Аппаратная обработка кутикулы и боковых валиков, коррекция формы, шлифовка ногтевой пластины, втирание минеральной пасты, пудры для блеска и защиты, увлажнение маслом, массаж рук кремом.",
+            "duration_minutes": 60,
+            "price": 40,
+        },
+        {
+            "sort_order": 3,
+            "name": "Маникюр с покрытием гель-лака",
+            "description": "Аппаратная обработка зоны кутикулы и боковых валиков, коррекция формы, подготовка ногтевой пластины, нанесение базы, выравнивание гелем, цветное покрытие, нанесение топа, увлажнение кожи рук.",
+            "duration_minutes": 90,
+            "price": 50,
+        },
+    ]
     async with async_session() as session:
-        count = await session.execute(select(func.count(Service.id)))
-        if count.scalar() == 0:
-            defaults = [
-                Service(
-                    name="Гигиенический маникюр",
-                    description="Коррекция формы, удаление ножницами кутикулы и её шлифовка, очистка боковых валиков, удаление заусенцев, увлажнение кожи рук и зоны кутикулы маслом.",
-                    duration_minutes=40,
-                    price=30,
-                    sort_order=1,
-                ),
-                Service(
-                    name="Аппаратный маникюр + японский уход",
-                    description="Аппаратная обработка кутикулы и боковых валиков, коррекция формы, шлифовка ногтевой пластины, втирание минеральной пасты, пудры для блеска и защиты, увлажнение маслом, массаж рук кремом.",
-                    duration_minutes=60,
-                    price=40,
-                    sort_order=2,
-                ),
-                Service(
-                    name="Маникюр с покрытием гель-лака",
-                    description="Аппаратная обработка зоны кутикулы и боковых валиков, коррекция формы, подготовка ногтевой пластины, нанесение базы, выравнивание гелем, цветное покрытие, нанесение топа, увлажнение кожи рук.",
-                    duration_minutes=90,
-                    price=50,
-                    sort_order=3,
-                ),
-            ]
-            session.add_all(defaults)
-            await session.commit()
+        for d in defaults:
+            existing = await session.execute(
+                select(Service).where(Service.sort_order == d["sort_order"])
+            )
+            service = existing.scalar_one_or_none()
+            if service:
+                for key, value in d.items():
+                    setattr(service, key, value)
+            else:
+                session.add(Service(**d))
+        await session.commit()
 
 
 async def start_bot():
