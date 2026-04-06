@@ -55,9 +55,7 @@ export default function BookingSuccess() {
 
       {masterUsername && (
         <motion.a
-          href={`https://t.me/${masterUsername}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`tg://resolve?domain=${masterUsername}`}
           className="btn btn--secondary"
           style={{ display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}
           initial={{ opacity: 0 }}

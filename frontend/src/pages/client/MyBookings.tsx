@@ -159,9 +159,7 @@ export default function MyBookings() {
 
       {masterUsername && (
         <a
-          href={`https://t.me/${masterUsername}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`tg://resolve?domain=${masterUsername}`}
           className="btn btn--secondary"
           style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: 16 }}
         >

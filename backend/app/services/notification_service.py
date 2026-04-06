@@ -35,10 +35,14 @@ class NotificationService:
 
         text = (
             f"🆕 <b>Новая запись!</b>\n\n"
-            f"👤 {client.first_name} {client.last_name or ''}"
+            f"👤 {client.first_name} {client.last_name or ''}\n"
         )
+        if client.phone:
+            text += f"📞 {client.phone}\n"
         if client.instagram_handle:
-            text += f" (@{client.instagram_handle})"
+            text += f"📷 Instagram: @{client.instagram_handle}\n"
+        if client.username:
+            text += f"✈️ Telegram: @{client.username}\n"
         text += (
             f"\n📋 {service.name}\n"
             f"📅 {booking.date.strftime('%d.%m.%Y')}\n"

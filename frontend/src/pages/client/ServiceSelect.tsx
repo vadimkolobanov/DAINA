@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getServices, ServiceItem } from "../../api/client";
+import { getServices, getPublicConfig, ServiceItem } from "../../api/client";
 import { useTelegram } from "../../hooks/useTelegram";
 import StepIndicator from "../../components/StepIndicator";
 import { BookingState } from "../../App";
@@ -17,11 +17,15 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
+  const [masterUsername, setMasterUsername] = useState("");
 
   useEffect(() => {
     getServices()
       .then(setServices)
       .catch(() => setError(true));
+    getPublicConfig()
+      .then((c) => setMasterUsername(c.master_username || ""))
+      .catch(() => {});
   }, []);
 
   const selectService = (s: ServiceItem) => {
@@ -68,6 +72,25 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
           </div>
         </motion.div>
       ))}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+        <button
+          className="btn btn--secondary"
+          style={{ flex: 1 }}
+          onClick={() => navigate("/my-bookings")}
+        >
+          📋 Мои записи
+        </button>
+        {masterUsername && (
+          <a
+            href={`tg://resolve?domain=${masterUsername}`}
+            className="btn btn--secondary"
+            style={{ flex: 1, display: "block", textAlign: "center", textDecoration: "none" }}
+          >
+            ✈️ Написать мастеру
+          </a>
+        )}
+      </div>
     </div>
   );
 }
