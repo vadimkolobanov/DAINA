@@ -1,12 +1,13 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useTelegram } from "./hooks/useTelegram";
-import { setAuthContext } from "./api/client";
+import { setAuthContext, getClientByTelegram, ClientItem } from "./api/client";
 import ServiceSelect from "./pages/client/ServiceSelect";
 import DateSelect from "./pages/client/DateSelect";
 import TimeSelect from "./pages/client/TimeSelect";
 import Confirmation from "./pages/client/Confirmation";
 import BookingSuccess from "./pages/client/BookingSuccess";
 import MyBookings from "./pages/client/MyBookings";
+import ProfileSetup from "./pages/client/ProfileSetup";
 import Dashboard from "./pages/admin/Dashboard";
 import Clients from "./pages/admin/Clients";
 import ClientCard from "./pages/admin/ClientCard";
@@ -60,7 +61,30 @@ export default function App() {
   }, [user, initData]);
   const { booking, setBooking, clearBooking } = usePersistedBooking();
 
-  if (!adminChecked) {
+  // Client profile check — load client and check if phone exists
+  const [clientProfile, setClientProfile] = useState<ClientItem | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [needsProfile, setNeedsProfile] = useState(false);
+
+  useEffect(() => {
+    if (!user || isAdmin) {
+      setProfileLoading(false);
+      return;
+    }
+    getClientByTelegram(user.id)
+      .then((client) => {
+        setClientProfile(client);
+        setNeedsProfile(!client.phone);
+        setProfileLoading(false);
+      })
+      .catch(() => {
+        // Client not found in DB yet (hasn't run /start)
+        setNeedsProfile(true);
+        setProfileLoading(false);
+      });
+  }, [user, isAdmin]);
+
+  if (!adminChecked || (!isAdmin && profileLoading)) {
     return <div className="app"><div className="hint">Загрузка...</div></div>;
   }
 
@@ -77,6 +101,32 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
+      </div>
+    );
+  }
+
+  if (needsProfile) {
+    if (!clientProfile) {
+      return (
+        <div className="app">
+          <div style={{ textAlign: "center", padding: "40px 16px" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>💅</div>
+            <h1 className="page-title">Добро пожаловать!</h1>
+            <p className="page-subtitle">
+              Чтобы записаться, сначала нажмите <b>Start</b> в боте, затем откройте приложение снова.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="app">
+        <ProfileSetup
+          clientId={clientProfile.id}
+          existingPhone={clientProfile.phone}
+          existingInstagram={clientProfile.instagram_handle}
+          onComplete={() => setNeedsProfile(false)}
+        />
       </div>
     );
   }
