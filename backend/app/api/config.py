@@ -39,6 +39,7 @@ async def get_public_config(session: AsyncSession = Depends(get_session)):
         "app_name": all_config.get("app_name", ""),
         "bot_username": all_config.get("bot_username", ""),
         "studio_address": all_config.get("studio_address", ""),
+        "master_username": all_config.get("master_username", ""),
     }
 
 

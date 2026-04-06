@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useTelegram } from "../../hooks/useTelegram";
-import { getClientBookings, getClientByTelegram, cancelBookingByClient } from "../../api/client";
+import { getClientBookings, getClientByTelegram, cancelBookingByClient, getPublicConfig } from "../../api/client";
 
 interface BookingItem {
   id: number;
@@ -37,6 +37,7 @@ export default function MyBookings() {
   const [error, setError] = useState(false);
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<number | null>(null);
+  const [masterUsername, setMasterUsername] = useState("");
 
   const loadBookings = () => {
     if (!user) return;
@@ -56,6 +57,12 @@ export default function MyBookings() {
   };
 
   useEffect(loadBookings, [user]);
+
+  useEffect(() => {
+    getPublicConfig()
+      .then((c) => setMasterUsername(c.master_username || ""))
+      .catch(() => {});
+  }, []);
 
   const handleCancel = async (bookingId: number) => {
     if (!clientId) return;
@@ -149,6 +156,18 @@ export default function MyBookings() {
           )}
         </motion.div>
       ))}
+
+      {masterUsername && (
+        <a
+          href={`https://t.me/${masterUsername}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn--secondary"
+          style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: 16 }}
+        >
+          ✈️ Написать мастеру
+        </a>
+      )}
     </div>
   );
 }

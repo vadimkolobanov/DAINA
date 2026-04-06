@@ -20,6 +20,7 @@ CONFIGURABLE_KEYS = {
     "followup_enabled", # enable post-visit followups
     "care_tips",       # care tips sent to client after completed visit
     "slot_interval",   # minutes between booking slots (default 30)
+    "master_username", # master's telegram username for "Write to master" button
 }
 
 # Default values sourced from env settings
@@ -35,6 +36,7 @@ _ENV_DEFAULTS = {
     "reminder_2h": lambda: str(settings.REMINDER_2H).lower(),
     "followup_enabled": lambda: str(settings.FOLLOWUP_ENABLED).lower(),
     "slot_interval": lambda: "30",
+    "master_username": lambda: "",
     "care_tips": lambda: (
         "Первые 2-3 часа избегайте контакта с водой\n"
         "Не используйте ацетонсодержащие средства\n"

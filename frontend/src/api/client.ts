@@ -166,6 +166,7 @@ export interface PublicConfig {
   app_name: string;
   bot_username: string;
   studio_address: string;
+  master_username: string;
 }
 
 export const getPublicConfig = () => request<PublicConfig>("/config/public");

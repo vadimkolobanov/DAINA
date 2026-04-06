@@ -1,13 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import ConfettiAnimation from "../../components/ConfettiAnimation";
 import { useTelegram } from "../../hooks/useTelegram";
+import { getPublicConfig } from "../../api/client";
 
 export default function BookingSuccess() {
   const { close } = useTelegram();
+  const [masterUsername, setMasterUsername] = useState("");
 
   useEffect(() => {
     try { sessionStorage.removeItem("daina_booking"); } catch {}
+    getPublicConfig()
+      .then((c) => setMasterUsername(c.master_username || ""))
+      .catch(() => {});
   }, []);
 
   return (
@@ -47,6 +52,22 @@ export default function BookingSuccess() {
         <br />
         Я напомню вам за 24 часа и за 2 часа до визита.
       </motion.p>
+
+      {masterUsername && (
+        <motion.a
+          href={`https://t.me/${masterUsername}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn--secondary"
+          style={{ display: "block", textAlign: "center", textDecoration: "none", marginBottom: 12 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          ✈️ Написать мастеру
+        </motion.a>
+      )}
 
       <motion.button
         className="btn btn--primary"
