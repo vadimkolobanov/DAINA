@@ -25,6 +25,30 @@ export interface BookingState {
   time: string;
 }
 
+const STORAGE_KEY = "daina_booking";
+
+function usePersistedBooking() {
+  const [booking, setBookingRaw] = useState<BookingState>(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { serviceId: null, serviceName: "", servicePrice: 0, serviceDuration: 0, date: "", time: "" };
+  });
+
+  const setBooking = (b: BookingState) => {
+    setBookingRaw(b);
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(b)); } catch {}
+  };
+
+  const clearBooking = () => {
+    setBookingRaw({ serviceId: null, serviceName: "", servicePrice: 0, serviceDuration: 0, date: "", time: "" });
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+  };
+
+  return { booking, setBooking, clearBooking };
+}
+
 export default function App() {
   const { isAdmin, adminChecked, user, initData } = useTelegram();
 
@@ -34,14 +58,7 @@ export default function App() {
       setAuthContext(user.id, initData);
     }
   }, [user, initData]);
-  const [booking, setBooking] = useState<BookingState>({
-    serviceId: null,
-    serviceName: "",
-    servicePrice: 0,
-    serviceDuration: 0,
-    date: "",
-    time: "",
-  });
+  const { booking, setBooking, clearBooking } = usePersistedBooking();
 
   if (!adminChecked) {
     return <div className="app"><div className="hint">Загрузка...</div></div>;

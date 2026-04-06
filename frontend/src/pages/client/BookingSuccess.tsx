@@ -1,9 +1,14 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import ConfettiAnimation from "../../components/ConfettiAnimation";
 import { useTelegram } from "../../hooks/useTelegram";
 
 export default function BookingSuccess() {
   const { close } = useTelegram();
+
+  useEffect(() => {
+    try { sessionStorage.removeItem("daina_booking"); } catch {}
+  }, []);
 
   return (
     <motion.div

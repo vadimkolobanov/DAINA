@@ -12,11 +12,12 @@ export default function Clients() {
   const [newName, setNewName] = useState("");
   const navigate = useNavigate();
 
-  const load = () => {
-    getClients(filter, search || undefined).then(setClients);
-  };
-
-  useEffect(load, [filter, search]);
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      getClients(filter, search || undefined).then(setClients);
+    }, search ? 300 : 0); // debounce only on search, instant on filter change
+    return () => clearTimeout(timeout);
+  }, [filter, search]);
 
   const addClient = async () => {
     if (!newIg) return;
@@ -28,7 +29,7 @@ export default function Clients() {
       setShowAdd(false);
       setNewIg("");
       setNewName("");
-      load();
+      getClients(filter, search || undefined).then(setClients);
     } catch {
       /* creation failed — form stays open for retry */
     }

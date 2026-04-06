@@ -10,6 +10,7 @@ export default function Schedule() {
   const [editing, setEditing] = useState<number | null>(null);
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
+  const [editError, setEditError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,14 +26,23 @@ export default function Schedule() {
   };
 
   const saveEdit = async (day: ScheduleDay) => {
-    const updated = { ...day, time_start: editStart, time_end: editEnd };
-    await updateScheduleDay(updated);
-    setSchedule((prev) =>
-      prev.map((d) =>
-        d.day_of_week === day.day_of_week ? { ...d, time_start: editStart, time_end: editEnd } : d
-      )
-    );
-    setEditing(null);
+    if (!editStart || !editEnd || editStart >= editEnd) {
+      setEditError("Начало должно быть раньше конца");
+      return;
+    }
+    setEditError("");
+    try {
+      const updated = { ...day, time_start: editStart, time_end: editEnd };
+      await updateScheduleDay(updated);
+      setSchedule((prev) =>
+        prev.map((d) =>
+          d.day_of_week === day.day_of_week ? { ...d, time_start: editStart, time_end: editEnd } : d
+        )
+      );
+      setEditing(null);
+    } catch {
+      setEditError("Не удалось сохранить");
+    }
   };
 
   return (
@@ -107,6 +117,9 @@ export default function Schedule() {
                   style={{ marginBottom: 0, flex: 1 }}
                 />
               </div>
+              {editError && (
+                <div style={{ fontSize: 13, color: "var(--danger)", marginBottom: 8 }}>{editError}</div>
+              )}
               <button className="btn btn--primary" onClick={() => saveEdit(day)}>
                 Сохранить
               </button>
