@@ -86,6 +86,9 @@ export const getBookingsByDate = (date: string) =>
 export const updateBookingStatus = (bookingId: number, status: string) =>
   request(`/bookings/${bookingId}/status?status=${status}`, { method: "PUT" });
 
+export const cancelBookingByClient = (bookingId: number, clientId: number) =>
+  request(`/bookings/${bookingId}/cancel?client_id=${clientId}`, { method: "PUT" });
+
 // Clients
 export interface ClientItem {
   id: number;

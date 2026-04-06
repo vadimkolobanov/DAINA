@@ -17,6 +17,8 @@ from app.services.config_service import ConfigService
 
 logger = logging.getLogger(__name__)
 
+MAX_ACTIVE_BOOKINGS = 3
+
 
 async def _get_slot_interval(session: AsyncSession) -> int:
     """Get slot interval from config, default 30 min."""
@@ -103,6 +105,20 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     if not client_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Client not found")
 
+    # Check active bookings limit
+    from sqlalchemy import func as sqlfunc
+    active_count_q = await session.execute(
+        select(sqlfunc.count(Booking.id)).where(
+            Booking.client_id == data.client_id,
+            Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+        )
+    )
+    if (active_count_q.scalar() or 0) >= MAX_ACTIVE_BOOKINGS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Максимум {MAX_ACTIVE_BOOKINGS} активных записей. Отмените существующую запись чтобы создать новую."
+        )
+
     result = await session.execute(select(Service).where(Service.id == data.service_id))
     service = result.scalar_one_or_none()
     if not service:
@@ -172,6 +188,46 @@ async def update_booking_status(
             await notifier.notify_client_noshow(booking)
     except Exception:
         logger.exception("Failed to notify client about status change for booking %s", booking.id)
+
+    return {"ok": True}
+
+
+@router.put("/{booking_id}/cancel")
+async def cancel_booking_by_client(
+    booking_id: int, client_id: int, session: AsyncSession = Depends(get_session)
+):
+    """Cancel a booking by the client. Only pending/confirmed bookings can be cancelled."""
+    result = await session.execute(
+        select(Booking).where(Booking.id == booking_id)
+    )
+    booking = result.scalar_one_or_none()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    if booking.client_id != client_id:
+        raise HTTPException(status_code=403, detail="Not your booking")
+    if booking.status not in (BookingStatus.PENDING, BookingStatus.CONFIRMED):
+        raise HTTPException(status_code=400, detail="Эту запись нельзя отменить")
+
+    svc = BookingService(session)
+    await svc.update_status(booking_id, BookingStatus.CANCELLED)
+
+    # Notify admin about cancellation
+    try:
+        from app.bot.bot import bot
+        from app.services.notification_service import NotificationService
+        config = await ConfigService(session).get_all()
+        notifier = NotificationService(bot, config)
+        admin_ids = await ConfigService(session).get_admin_ids()
+        for admin_id in admin_ids:
+            await bot.send_message(
+                admin_id,
+                f"❌ Клиент <b>{booking.client.first_name}</b> отменил запись:\n"
+                f"📋 {booking.service.name}\n"
+                f"📅 {booking.date.strftime('%d.%m.%Y')} в {booking.time_start.strftime('%H:%M')}",
+                parse_mode="HTML",
+            )
+    except Exception:
+        logger.exception("Failed to notify admin about client cancellation for booking %s", booking_id)
 
     return {"ok": True}
 
