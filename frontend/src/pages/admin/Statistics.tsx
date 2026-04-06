@@ -98,7 +98,7 @@ export default function Statistics() {
           <span className="confirmation__value">{stats.cancelled}</span>
         </div>
         <div className="confirmation__row">
-          <span className="confirmation__label">⚠️ No-show</span>
+          <span className="confirmation__label">⚠️ Не пришёл</span>
           <span className="confirmation__value">{stats.no_show}</span>
         </div>
       </motion.div>

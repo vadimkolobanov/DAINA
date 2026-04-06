@@ -27,7 +27,7 @@ const statusBadge: Record<string, { label: string; cls: string }> = {
   confirmed: { label: "Подтв.", cls: "badge--confirmed" },
   completed: { label: "Готово", cls: "badge--confirmed" },
   cancelled: { label: "Отмена", cls: "" },
-  no_show: { label: "No-show", cls: "badge--new" },
+  no_show: { label: "Не пришёл", cls: "badge--new" },
 };
 
 export default function Dashboard() {
