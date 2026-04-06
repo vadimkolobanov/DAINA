@@ -174,7 +174,7 @@ export default function ClientCard() {
             <button
               onClick={() => {
                 const tg = window.Telegram?.WebApp;
-                if (tg?.openTelegramLink) tg.openTelegramLink(`https://t.me/${client.username}`);
+                if (tg?.openTelegramLink) tg.openTelegramLink(`https://t.me/${(client.username || "").replace("@", "")}`);
                 else window.open(`https://t.me/${client.username}`, "_blank");
               }}
               style={{ fontSize: 15, color: "var(--accent-dark)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}

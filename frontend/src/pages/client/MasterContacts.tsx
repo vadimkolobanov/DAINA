@@ -21,9 +21,9 @@ export default function MasterContacts() {
   }, []);
 
   const name = config.master_name || "Мастер";
-  const username = config.master_username || "";
+  const username = (config.master_username || "").replace("@", "");
   const phone = config.master_phone || "";
-  const instagram = config.master_instagram || "";
+  const instagram = (config.master_instagram || "").replace("@", "");
   const address = config.studio_address || "";
   const mapUrl = config.studio_map_url || "";
 
