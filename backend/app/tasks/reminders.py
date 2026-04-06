@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import and_, select
@@ -7,61 +8,66 @@ from app.database import async_session
 from app.models.booking import Booking, BookingStatus
 from app.services.notification_service import NotificationService
 
+logger = logging.getLogger(__name__)
+
 
 async def check_reminders():
     """Check and send booking reminders. Run every 15 minutes."""
     now = datetime.now()
     notifier = NotificationService(bot)
 
-    async with async_session() as session:
-        # 24-hour reminders: send for bookings happening 23h45m..24h15m from now
-        reminder_24h_start = now + timedelta(hours=24) - timedelta(minutes=15)
-        reminder_24h_end = now + timedelta(hours=24) + timedelta(minutes=15)
+    try:
+        async with async_session() as session:
+            # 24-hour reminders: send for bookings happening 23h45m..24h15m from now
+            reminder_24h_start = now + timedelta(hours=24) - timedelta(minutes=15)
+            reminder_24h_end = now + timedelta(hours=24) + timedelta(minutes=15)
 
-        # Query bookings on the target date(s)
-        target_dates_24h = {reminder_24h_start.date(), reminder_24h_end.date()}
-        result = await session.execute(
-            select(Booking).where(
-                and_(
-                    Booking.date.in_(target_dates_24h),
-                    Booking.status == BookingStatus.CONFIRMED,
-                    Booking.reminder_24h_sent == False,
+            # Query bookings on the target date(s) — use sorted list for asyncpg compatibility
+            target_dates_24h = sorted(set([reminder_24h_start.date(), reminder_24h_end.date()]))
+            result = await session.execute(
+                select(Booking).where(
+                    and_(
+                        Booking.date.in_(target_dates_24h),
+                        Booking.status == BookingStatus.CONFIRMED,
+                        Booking.reminder_24h_sent == False,
+                    )
                 )
             )
-        )
-        for booking in result.scalars().all():
-            booking_dt = datetime.combine(booking.date, booking.time_start)
-            if reminder_24h_start <= booking_dt <= reminder_24h_end:
-                try:
-                    await notifier.send_reminder_24h(booking)
-                    booking.reminder_24h_sent = True
-                except Exception:
-                    pass
+            for booking in result.scalars().all():
+                booking_dt = datetime.combine(booking.date, booking.time_start)
+                if reminder_24h_start <= booking_dt <= reminder_24h_end:
+                    try:
+                        await notifier.send_reminder_24h(booking)
+                        booking.reminder_24h_sent = True
+                    except Exception:
+                        logger.exception("Failed to send 24h reminder for booking %s", booking.id)
 
-        # 2-hour reminders: send for bookings happening 1h45m..2h15m from now
-        reminder_2h_start = now + timedelta(hours=2) - timedelta(minutes=15)
-        reminder_2h_end = now + timedelta(hours=2) + timedelta(minutes=15)
+            # 2-hour reminders: send for bookings happening 1h45m..2h15m from now
+            reminder_2h_start = now + timedelta(hours=2) - timedelta(minutes=15)
+            reminder_2h_end = now + timedelta(hours=2) + timedelta(minutes=15)
 
-        target_dates_2h = {reminder_2h_start.date(), reminder_2h_end.date()}
-        result = await session.execute(
-            select(Booking).where(
-                and_(
-                    Booking.date.in_(target_dates_2h),
-                    Booking.status == BookingStatus.CONFIRMED,
-                    Booking.reminder_2h_sent == False,
+            target_dates_2h = sorted(set([reminder_2h_start.date(), reminder_2h_end.date()]))
+            result = await session.execute(
+                select(Booking).where(
+                    and_(
+                        Booking.date.in_(target_dates_2h),
+                        Booking.status == BookingStatus.CONFIRMED,
+                        Booking.reminder_2h_sent == False,
+                    )
                 )
             )
-        )
-        for booking in result.scalars().all():
-            booking_dt = datetime.combine(booking.date, booking.time_start)
-            if reminder_2h_start <= booking_dt <= reminder_2h_end:
-                try:
-                    await notifier.send_reminder_2h(booking)
-                    booking.reminder_2h_sent = True
-                except Exception:
-                    pass
+            for booking in result.scalars().all():
+                booking_dt = datetime.combine(booking.date, booking.time_start)
+                if reminder_2h_start <= booking_dt <= reminder_2h_end:
+                    try:
+                        await notifier.send_reminder_2h(booking)
+                        booking.reminder_2h_sent = True
+                    except Exception:
+                        logger.exception("Failed to send 2h reminder for booking %s", booking.id)
 
-        await session.commit()
+            await session.commit()
+    except Exception:
+        logger.exception("Error in check_reminders task")
 
 
 async def check_followups():
@@ -70,20 +76,26 @@ async def check_followups():
     two_hours_ago = now - timedelta(hours=2)
     notifier = NotificationService(bot)
 
-    async with async_session() as session:
-        result = await session.execute(
-            select(Booking).where(
-                and_(
-                    Booking.date == two_hours_ago.date(),
-                    Booking.status == BookingStatus.COMPLETED,
-                    Booking.followup_sent == False,
+    try:
+        async with async_session() as session:
+            result = await session.execute(
+                select(Booking).where(
+                    and_(
+                        Booking.date == two_hours_ago.date(),
+                        Booking.status == BookingStatus.COMPLETED,
+                        Booking.followup_sent == False,
+                    )
                 )
             )
-        )
-        for booking in result.scalars().all():
-            booking_end = datetime.combine(booking.date, booking.time_end)
-            if booking_end <= two_hours_ago:
-                await notifier.send_followup(booking)
-                booking.followup_sent = True
+            for booking in result.scalars().all():
+                booking_end = datetime.combine(booking.date, booking.time_end)
+                if booking_end <= two_hours_ago:
+                    try:
+                        await notifier.send_followup(booking)
+                        booking.followup_sent = True
+                    except Exception:
+                        logger.exception("Failed to send followup for booking %s", booking.id)
 
-        await session.commit()
+            await session.commit()
+    except Exception:
+        logger.exception("Error in check_followups task")
