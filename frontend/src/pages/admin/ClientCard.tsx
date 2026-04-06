@@ -79,26 +79,34 @@ export default function ClientCard() {
   }, []);
 
   const saveNotes = async () => {
-    await updateClient(Number(clientId), { notes });
-    setEditingNotes(false);
-    setClient((c) => (c ? { ...c, notes } : c));
+    try {
+      await updateClient(Number(clientId), { notes });
+      setEditingNotes(false);
+      setClient((c) => (c ? { ...c, notes } : c));
+    } catch { /* keep editing state on error */ }
   };
 
   const toggleVip = async () => {
     const newVip = !isVip;
-    await updateClient(Number(clientId), { is_vip: newVip });
-    setIsVip(newVip);
-    setClient((c) => (c ? { ...c, is_vip: newVip } : c));
+    try {
+      await updateClient(Number(clientId), { is_vip: newVip });
+      setIsVip(newVip);
+      setClient((c) => (c ? { ...c, is_vip: newVip } : c));
+    } catch { /* revert on error — state unchanged */ }
   };
 
   const changeBookingStatus = async (bookingId: number, status: string) => {
-    await updateBookingStatus(bookingId, status);
-    loadClient();
+    try {
+      await updateBookingStatus(bookingId, status);
+      loadClient();
+    } catch { /* status unchanged on error */ }
   };
 
   const handleDeleteBooking = async (bookingId: number) => {
-    await deleteBooking(bookingId);
-    loadClient();
+    try {
+      await deleteBooking(bookingId);
+      loadClient();
+    } catch { /* booking not deleted on error */ }
   };
 
   const deleteClient = async () => {

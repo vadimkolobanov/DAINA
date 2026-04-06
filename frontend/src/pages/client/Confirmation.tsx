@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import StepIndicator from "../../components/StepIndicator";
 import { useTelegram } from "../../hooks/useTelegram";
-import { createBooking } from "../../api/client";
+import { createBooking, getClientByTelegram } from "../../api/client";
 import { BookingState } from "../../App";
 import { useEffect, useState } from "react";
 
@@ -49,13 +49,11 @@ export default function Confirmation({ booking }: Props) {
     setSubmitting(true);
     setError("");
     try {
-      // First get or create the client from the API
-      const res = await fetch(`/api/clients/telegram/${user.id}`);
       let clientId: number;
-      if (res.ok) {
-        const client = await res.json();
+      try {
+        const client = await getClientByTelegram(user.id);
         clientId = client.id;
-      } else {
+      } catch {
         setError("Сначала запустите бота командой /start");
         setSubmitting(false);
         return;

@@ -20,14 +20,18 @@ export default function Clients() {
 
   const addClient = async () => {
     if (!newIg) return;
-    await createClientFromInstagram({
-      instagram_handle: newIg.replace("@", ""),
-      name: newName || undefined,
-    });
-    setShowAdd(false);
-    setNewIg("");
-    setNewName("");
-    load();
+    try {
+      await createClientFromInstagram({
+        instagram_handle: newIg.replace("@", ""),
+        name: newName || undefined,
+      });
+      setShowAdd(false);
+      setNewIg("");
+      setNewName("");
+      load();
+    } catch {
+      /* creation failed — form stays open for retry */
+    }
   };
 
   const filters = [
