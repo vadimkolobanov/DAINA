@@ -113,7 +113,7 @@ export default function MyBookings() {
               month: "long",
               weekday: "short",
             })}{" "}
-            &bull; {b.time_start} — {b.time_end} &bull; {b.price.toLocaleString()}₽
+            &bull; {b.time_start} — {b.time_end} &bull; {b.price.toLocaleString()} руб
           </div>
 
           {canCancel(b.status) && confirmCancelId !== b.id && (

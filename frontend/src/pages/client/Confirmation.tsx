@@ -98,7 +98,7 @@ export default function Confirmation({ booking }: Props) {
         <div className="confirmation__row">
           <span className="confirmation__label">Стоимость</span>
           <span className="confirmation__value">
-            {booking.servicePrice.toLocaleString()}₽
+            {booking.servicePrice.toLocaleString()} руб
           </span>
         </div>
 

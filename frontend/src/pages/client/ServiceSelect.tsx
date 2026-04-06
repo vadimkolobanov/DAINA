@@ -18,13 +18,17 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
 
   const [error, setError] = useState(false);
   const [masterUsername, setMasterUsername] = useState("");
+  const [currency, setCurrency] = useState("руб");
 
   useEffect(() => {
     getServices()
       .then(setServices)
       .catch(() => setError(true));
     getPublicConfig()
-      .then((c) => setMasterUsername(c.master_username || ""))
+      .then((c) => {
+        setMasterUsername(c.master_username || "");
+        setCurrency(c.currency || "руб");
+      })
       .catch(() => {});
   }, []);
 
@@ -67,8 +71,15 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
           <div className="service-card__name">{s.name}</div>
           <div className="service-card__description">{s.description}</div>
           <div className="service-card__meta">
-            <span className="service-card__duration">{s.duration_minutes} мин</span>
-            <span className="service-card__price">{s.price.toLocaleString()}₽</span>
+            <span className="service-card__duration">от {s.duration_minutes} мин</span>
+            <span className="service-card__price">
+              {s.old_price && (
+                <span style={{ textDecoration: "line-through", opacity: 0.5, marginRight: 6, fontSize: 14 }}>
+                  {s.old_price} {currency}
+                </span>
+              )}
+              {s.price} {currency}
+            </span>
           </div>
         </motion.div>
       ))}
@@ -81,16 +92,24 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
         >
           📋 Мои записи
         </button>
-        {masterUsername && (
-          <button
-            className="btn btn--secondary"
-            style={{ flex: 1 }}
-            onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
-          >
-            ✈️ Написать мастеру
-          </button>
-        )}
+        <button
+          className="btn btn--secondary"
+          style={{ flex: 1 }}
+          onClick={() => navigate("/gallery")}
+        >
+          🖼 Галерея
+        </button>
       </div>
+
+      {masterUsername && (
+        <button
+          className="btn btn--secondary"
+          style={{ marginTop: 8 }}
+          onClick={() => tg?.openTelegramLink(`https://t.me/${masterUsername}`)}
+        >
+          ✈️ Написать мастеру
+        </button>
+      )}
     </div>
   );
 }

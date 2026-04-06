@@ -39,11 +39,20 @@ export interface ServiceItem {
   description: string | null;
   duration_minutes: number;
   price: number;
+  old_price: number | null;
   photo_url: string | null;
   is_active: boolean;
+  sort_order: number;
 }
 
 export const getServices = () => request<ServiceItem[]>("/services");
+export const getAllServices = () => request<ServiceItem[]>("/services/all");
+export const createService = (data: Partial<ServiceItem>) =>
+  request<ServiceItem>("/services", { method: "POST", body: JSON.stringify(data) });
+export const updateService = (id: number, data: Partial<ServiceItem>) =>
+  request<ServiceItem>(`/services/${id}`, { method: "PUT", body: JSON.stringify(data) });
+export const deleteService = (id: number) =>
+  request(`/services/${id}`, { method: "DELETE" });
 
 // Bookings
 export interface TimeSlot {
@@ -167,6 +176,7 @@ export interface PublicConfig {
   bot_username: string;
   studio_address: string;
   master_username: string;
+  currency: string;
 }
 
 export const getPublicConfig = () => request<PublicConfig>("/config/public");

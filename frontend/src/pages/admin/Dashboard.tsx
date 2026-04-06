@@ -135,7 +135,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--accent-dark)" }}>
-                    {b.price.toLocaleString()}₽
+                    {b.price.toLocaleString()} руб
                   </div>
                   {statusBadge[b.status] && (
                     <span className={`badge ${statusBadge[b.status].cls}`} style={{ marginTop: 4 }}>
@@ -147,20 +147,15 @@ export default function Dashboard() {
             </motion.div>
           ))}
 
-          {/* All bookings link */}
+          {/* Quick actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-            <button
-              className="btn btn--secondary"
-              style={{ flex: 1 }}
-              onClick={() => navigate("/all-bookings")}
-            >
+            <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/all-bookings")}>
               Все записи
             </button>
-            <button
-              className="btn btn--secondary"
-              style={{ flex: 1 }}
-              onClick={() => navigate("/settings")}
-            >
+            <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/services")}>
+              Услуги
+            </button>
+            <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/settings")}>
               Настройки
             </button>
           </div>

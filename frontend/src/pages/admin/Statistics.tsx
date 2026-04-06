@@ -57,7 +57,7 @@ export default function Statistics() {
 
       <div className="stat-grid">
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-          <div className="stat-card__value">{stats.revenue.toLocaleString()}₽</div>
+          <div className="stat-card__value">{stats.revenue.toLocaleString()} руб</div>
           <div className="stat-card__label">Выручка</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
@@ -65,7 +65,7 @@ export default function Statistics() {
           <div className="stat-card__label">Записей</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-          <div className="stat-card__value">{stats.average_check.toLocaleString()}₽</div>
+          <div className="stat-card__value">{stats.average_check.toLocaleString()} руб</div>
           <div className="stat-card__label">Средний чек</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>

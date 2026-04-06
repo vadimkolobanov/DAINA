@@ -31,6 +31,7 @@ const CONFIG_SECTIONS: ConfigSection[] = [
       { key: "bot_username", label: "Username бота", hint: "Без @, например: DAINANailBot" },
       { key: "admin_ids", label: "ID администраторов", hint: "Telegram ID через запятую. Узнать свой: @userinfobot" },
       { key: "master_username", label: "Telegram мастера", hint: "Username без @. Клиенты смогут написать через кнопку в приложении" },
+      { key: "currency", label: "Валюта", hint: "Символ валюты: руб, BYN, ₽, $ и т.д." },
     ],
   },
   {

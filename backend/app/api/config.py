@@ -40,6 +40,7 @@ async def get_public_config(session: AsyncSession = Depends(get_session)):
         "bot_username": all_config.get("bot_username", ""),
         "studio_address": all_config.get("studio_address", ""),
         "master_username": all_config.get("master_username", ""),
+        "currency": all_config.get("currency", "руб"),
     }
 
 

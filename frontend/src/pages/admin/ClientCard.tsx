@@ -186,11 +186,11 @@ export default function ClientCard() {
           <div className="stat-card__label">Визитов</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
-          <div className="stat-card__value">{client.total_spent.toLocaleString()}₽</div>
+          <div className="stat-card__value">{client.total_spent.toLocaleString()} руб</div>
           <div className="stat-card__label">Всего</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
-          <div className="stat-card__value">{client.average_check.toLocaleString()}₽</div>
+          <div className="stat-card__value">{client.average_check.toLocaleString()} руб</div>
           <div className="stat-card__label">Средний чек</div>
         </motion.div>
         <motion.div className="stat-card" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}>
@@ -270,7 +270,7 @@ export default function ClientCard() {
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{b.price.toLocaleString()}₽</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{b.price.toLocaleString()} руб</div>
                 <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)" }}>
                   {statusLabel[b.status]}
                 </div>

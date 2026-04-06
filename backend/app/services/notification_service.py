@@ -18,14 +18,18 @@ class NotificationService:
         """Get value from dynamic config, fall back to env settings."""
         if self._config.get(key):
             return self._config[key]
-        # Fallback to env
         env_map = {
             "studio_address": settings.STUDIO_ADDRESS,
             "studio_map_url": settings.STUDIO_MAP_URL,
             "app_name": settings.APP_NAME,
             "master_name": settings.MASTER_NAME,
+            "currency": "руб",
         }
         return env_map.get(key, fallback)
+
+    @property
+    def currency(self) -> str:
+        return self._get("currency", "руб")
 
     async def notify_admin_new_booking(self, booking: Booking):
         """Notify master about new booking."""
@@ -47,7 +51,7 @@ class NotificationService:
             f"\n📋 {service.name}\n"
             f"📅 {booking.date.strftime('%d.%m.%Y')}\n"
             f"🕐 {booking.time_start.strftime('%H:%M')} — {booking.time_end.strftime('%H:%M')}\n"
-            f"💰 {service.price}₽"
+            f"💰 {service.price} {self.currency}"
         )
         if is_new:
             text += "\n\n⚠️ <b>Новый клиент (первый визит)</b>"
@@ -72,7 +76,7 @@ class NotificationService:
             f"📋 {service.name}\n"
             f"📅 {booking.date.strftime('%d.%m.%Y')}\n"
             f"🕐 {booking.time_start.strftime('%H:%M')} — {booking.time_end.strftime('%H:%M')}\n"
-            f"💰 {service.price}₽\n"
+            f"💰 {service.price} {self.currency}\n"
         )
         address = self._get("studio_address")
         if address:
@@ -107,7 +111,7 @@ class NotificationService:
             f"Спасибо, что были у нас, <b>{booking.client.first_name}</b>! 💅✨\n\n"
             f"📋 {service.name}\n"
             f"📅 {booking.date.strftime('%d.%m.%Y')}\n"
-            f"💰 {service.price}₽\n"
+            f"💰 {service.price} {self.currency}\n"
         )
         if care_tips:
             tips_formatted = "\n".join(f"  • {line.strip()}" for line in care_tips.strip().split("\n") if line.strip())

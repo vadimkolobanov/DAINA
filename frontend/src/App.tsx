@@ -15,6 +15,8 @@ import AllBookings from "./pages/admin/AllBookings";
 import Schedule from "./pages/admin/Schedule";
 import Statistics from "./pages/admin/Statistics";
 import Settings from "./pages/admin/Settings";
+import AdminServices from "./pages/admin/Services";
+import Gallery from "./pages/client/Gallery";
 import { useEffect, useState } from "react";
 
 export interface BookingState {
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/stats" element={<Statistics />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/services" element={<AdminServices />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
@@ -152,6 +155,7 @@ export default function App() {
         />
         <Route path="/success" element={<BookingSuccess />} />
         <Route path="/my-bookings" element={<MyBookings />} />
+        <Route path="/gallery" element={<Gallery />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>

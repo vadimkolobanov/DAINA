@@ -8,13 +8,9 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="💅 Записаться на маникюр",
+                    text="💅 Открыть личный кабинет",
                     web_app=WebAppInfo(url=settings.WEBAPP_URL),
                 )
-            ],
-            [
-                InlineKeyboardButton(text="📋 Мои записи", callback_data="my_bookings"),
-                InlineKeyboardButton(text="🖼 Наши работы", callback_data="gallery"),
             ],
         ]
     )

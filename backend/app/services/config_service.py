@@ -21,6 +21,7 @@ CONFIGURABLE_KEYS = {
     "care_tips",       # care tips sent to client after completed visit
     "slot_interval",   # minutes between booking slots (default 30)
     "master_username", # master's telegram username for "Write to master" button
+    "currency",        # currency symbol (default "руб")
 }
 
 # Default values sourced from env settings
@@ -37,6 +38,7 @@ _ENV_DEFAULTS = {
     "followup_enabled": lambda: str(settings.FOLLOWUP_ENABLED).lower(),
     "slot_interval": lambda: "30",
     "master_username": lambda: "",
+    "currency": lambda: "руб",
     "care_tips": lambda: (
         "Первые 2-3 часа избегайте контакта с водой\n"
         "Не используйте ацетонсодержащие средства\n"

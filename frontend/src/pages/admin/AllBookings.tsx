@@ -103,7 +103,7 @@ export default function AllBookings() {
               month: "short",
               weekday: "short",
             })}{" "}
-            &bull; {b.time_start}–{b.time_end} &bull; {b.price.toLocaleString()}₽
+            &bull; {b.time_start}–{b.time_end} &bull; {b.price.toLocaleString()} руб
           </div>
         </motion.div>
       ))}

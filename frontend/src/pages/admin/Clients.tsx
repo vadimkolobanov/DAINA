@@ -119,7 +119,7 @@ export default function Clients() {
             </div>
             <div className="client-item__meta">
               {c.instagram_handle ? `@${c.instagram_handle}` : c.username ? `@${c.username}` : ""}{" "}
-              &bull; {c.visit_count} визитов &bull; {c.total_spent.toLocaleString()}₽
+              &bull; {c.visit_count} визитов &bull; {c.total_spent.toLocaleString()} руб
             </div>
           </div>
         </motion.div>
