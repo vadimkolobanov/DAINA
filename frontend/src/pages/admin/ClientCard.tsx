@@ -56,6 +56,7 @@ export default function ClientCard() {
   const [isVip, setIsVip] = useState(false);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
   const [botUsername, setBotUsername] = useState("DAINANailBot");
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
@@ -320,11 +321,13 @@ export default function ClientCard() {
             }}
             onClick={() => {
               navigator.clipboard.writeText(`t.me/${botUsername}?start=ref_${client.referral_code}`);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
             }}
           >
             t.me/${botUsername}?start=ref_{client.referral_code}
-            <div style={{ fontSize: 11, color: "var(--tg-theme-hint-color)", marginTop: 4 }}>
-              Нажмите чтобы скопировать
+            <div style={{ fontSize: 11, color: copied ? "var(--success)" : "var(--tg-theme-hint-color)", marginTop: 4 }}>
+              {copied ? "Скопировано!" : "Нажмите чтобы скопировать"}
             </div>
           </div>
         </motion.div>

@@ -10,12 +10,16 @@ export default function Clients() {
   const [showAdd, setShowAdd] = useState(false);
   const [newIg, setNewIg] = useState("");
   const [newName, setNewName] = useState("");
+  const [searching, setSearching] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (search) setSearching(true);
     const timeout = setTimeout(() => {
-      getClients(filter, search || undefined).then(setClients);
-    }, search ? 300 : 0); // debounce only on search, instant on filter change
+      getClients(filter, search || undefined)
+        .then(setClients)
+        .finally(() => setSearching(false));
+    }, search ? 300 : 0);
     return () => clearTimeout(timeout);
   }, [filter, search]);
 
@@ -92,6 +96,8 @@ export default function Clients() {
           </button>
         </motion.div>
       )}
+
+      {searching && <div className="hint">Поиск...</div>}
 
       {clients.map((c, i) => (
         <motion.div
