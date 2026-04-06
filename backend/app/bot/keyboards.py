@@ -26,7 +26,7 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="📊 Панель управления",
-                    web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}?mode=admin"),
+                    web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}?startapp=admin"),
                 )
             ],
         ]

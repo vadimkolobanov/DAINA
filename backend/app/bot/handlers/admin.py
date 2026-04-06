@@ -10,7 +10,7 @@ router = Router()
 
 @router.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if message.from_user.id != settings.ADMIN_TELEGRAM_ID:
+    if message.from_user.id not in settings.get_admin_ids():
         await message.answer("Нет доступа.")
         return
 

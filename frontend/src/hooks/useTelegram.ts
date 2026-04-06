@@ -67,14 +67,17 @@ export function useTelegram() {
   const startParam = tg?.initDataUnsafe?.start_param;
   const initData = tg?.initData;
 
+  // Check if admin mode was requested via start_param or URL query
+  const adminRequested = startParam === "admin"
+    || new URLSearchParams(window.location.search).get("startapp") === "admin";
+
   // Validate admin access via server
   useEffect(() => {
     if (!user) {
       setAdminChecked(true);
       return;
     }
-    // Only check if start_param hints at admin (optimization)
-    if (startParam !== "admin") {
+    if (!adminRequested) {
       setAdminChecked(true);
       return;
     }
@@ -87,7 +90,7 @@ export function useTelegram() {
         setIsAdmin(false);
         setAdminChecked(true);
       });
-  }, [user, startParam, initData]);
+  }, [user, adminRequested, initData]);
 
   const haptic = useCallback(
     (type: "light" | "medium" | "heavy" = "light") => {
