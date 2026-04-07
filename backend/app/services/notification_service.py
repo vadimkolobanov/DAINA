@@ -75,9 +75,23 @@ class NotificationService:
                 ],
             ]
         )
-        await self.bot.send_message(
-            settings.ADMIN_TELEGRAM_ID, text, reply_markup=keyboard, parse_mode="HTML"
-        )
+        # Send to all configured admins
+        admin_ids = settings.get_admin_ids()
+        for admin_id in admin_ids:
+            try:
+                await self.bot.send_message(
+                    admin_id, text, reply_markup=keyboard, parse_mode="HTML"
+                )
+            except Exception:
+                pass
+        # Fallback: always send to primary admin if not in set
+        if settings.ADMIN_TELEGRAM_ID and settings.ADMIN_TELEGRAM_ID not in admin_ids:
+            try:
+                await self.bot.send_message(
+                    settings.ADMIN_TELEGRAM_ID, text, reply_markup=keyboard, parse_mode="HTML"
+                )
+            except Exception:
+                pass
 
     # ── Client booking notifications ──
 

@@ -114,7 +114,12 @@ app = FastAPI(title="DAINA Nail Studio", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        settings.WEBAPP_URL,
+        "https://web.telegram.org",
+        "https://webk.telegram.org",
+        "https://webz.telegram.org",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

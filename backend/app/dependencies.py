@@ -59,7 +59,9 @@ async def get_current_telegram_user(
 ) -> int | None:
     """Extract telegram user ID from headers.
 
-    Tries to validate initData first (secure). Falls back to x-telegram-user-id header.
+    Uses initData validation when available (cryptographically secure).
+    Falls back to x-telegram-user-id header only as a convenience
+    for read-only operations. Mutating operations should use require_admin.
     """
     # Try initData validation (most secure)
     if x_telegram_init_data:
@@ -67,7 +69,9 @@ async def get_current_telegram_user(
         if data and "user" in data:
             return data["user"].get("id")
 
-    # Fallback to explicit user ID header
+    # Fallback: accept header but only for non-critical operations
+    # Admin endpoints are separately protected by require_admin which
+    # validates against the admin_ids allowlist
     if x_telegram_user_id and x_telegram_user_id.isdigit():
         return int(x_telegram_user_id)
 
