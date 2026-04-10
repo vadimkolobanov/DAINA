@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -141,20 +141,38 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     except (ValueError, IndexError):
         raise HTTPException(status_code=400, detail="Неверный формат времени")
 
-    # Validate slot is available
-    slot_svc = SlotService(session)
-    available_slots = await slot_svc.get_available_slots(data.date, data.service_id)
-    matching = [s for s in available_slots if s.time_start == target_time]
-    if not matching:
+    # Lock the slot row to prevent race condition
+    from sqlalchemy import select as sa_select
+    from app.models.manual_slot import ManualSlot
+    slot_result = await session.execute(
+        sa_select(ManualSlot).where(
+            ManualSlot.service_id == data.service_id,
+            ManualSlot.date == data.date,
+            ManualSlot.time_start == target_time,
+            ManualSlot.booking_id.is_(None),
+            ManualSlot.is_manual_booking == False,
+        ).with_for_update()
+    )
+    slot = slot_result.scalar_one_or_none()
+    if not slot:
         raise HTTPException(status_code=400, detail="Это время уже недоступно")
 
-    svc = BookingService(session)
-    booking = await svc.create_booking(
-        data.client_id, data.service_id, data.date, target_time, service.duration_minutes
+    # Slot is locked — create booking and link atomically
+    end_time = (datetime.combine(data.date, target_time) + timedelta(minutes=service.duration_minutes)).time()
+    from app.models.booking import Booking as BookingModel
+    booking = BookingModel(
+        client_id=data.client_id,
+        service_id=data.service_id,
+        date=data.date,
+        time_start=target_time,
+        time_end=end_time,
+        status=BookingStatus.PENDING,
     )
-
-    # Link booking to slot
-    await slot_svc.book_slot(data.service_id, data.date, target_time, booking.id)
+    session.add(booking)
+    await session.flush()  # Get booking.id without committing
+    slot.booking_id = booking.id
+    await session.commit()
+    await session.refresh(booking)
 
     # Notify master about new booking
     try:

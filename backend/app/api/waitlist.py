@@ -6,12 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import func, select
+
 from app.database import get_session
 from app.dependencies import get_current_telegram_user, require_admin
+from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
 from app.services.waitlist_service import WaitlistService
 
-from sqlalchemy import select
+MAX_ACTIVE_BOOKINGS = 3
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +41,19 @@ async def join_waitlist(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Check active bookings limit — don't add to waitlist if they can't book anyway
+    active_count = await session.execute(
+        select(func.count(Booking.id)).where(
+            Booking.client_id == client.id,
+            Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+        )
+    )
+    if (active_count.scalar() or 0) >= MAX_ACTIVE_BOOKINGS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"У вас уже {MAX_ACTIVE_BOOKINGS} активных записей. Отмените одну, чтобы встать в очередь."
+        )
 
     svc = WaitlistService(session)
     try:
