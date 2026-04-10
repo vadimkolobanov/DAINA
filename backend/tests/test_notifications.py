@@ -76,19 +76,19 @@ async def test_notify_client_sends_when_telegram_id_exists(mock_bot):
 
 @pytest.mark.asyncio
 async def test_notify_admin_sends_to_all_admin_ids(mock_bot):
-    """Should send to all admins from settings.get_admin_ids()."""
+    """Should send to all admins from config dict + bootstrap env admin."""
     client = _make_client()
     service = _make_service()
     booking = _make_booking(client, service)
 
     with patch("app.services.notification_service.settings") as mock_settings:
-        mock_settings.ADMIN_TELEGRAM_ID = 0
-        mock_settings.get_admin_ids.return_value = {111, 222, 333}
+        mock_settings.ADMIN_TELEGRAM_ID = 111
+        mock_settings.WEBAPP_URL = "https://example.com"
 
-        notifier = NotificationService(mock_bot, {})
+        notifier = NotificationService(mock_bot, {"admin_ids": "111,222,333"})
         await notifier.notify_admin_new_booking(booking)
 
-    # Should have been called for each admin
+    # Should have been called for each admin (111 from env + 222, 333 from config)
     assert mock_bot.send_message.call_count == 3
     called_ids = {call[0][0] for call in mock_bot.send_message.call_args_list}
     assert called_ids == {111, 222, 333}

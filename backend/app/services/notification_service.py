@@ -38,6 +38,19 @@ class NotificationService:
     def currency(self) -> str:
         return self._get("currency", "руб")
 
+    def _get_admin_ids(self) -> set[int]:
+        """Get all admin IDs from config dict + bootstrap env admin."""
+        ids: set[int] = set()
+        if settings.ADMIN_TELEGRAM_ID:
+            ids.add(settings.ADMIN_TELEGRAM_ID)
+        raw_ids = self._config.get("admin_ids", "")
+        if raw_ids:
+            for raw in raw_ids.split(","):
+                raw = raw.strip()
+                if raw.isdigit():
+                    ids.add(int(raw))
+        return ids
+
     async def _send_client(self, telegram_id: int | None, text: str, keyboard: InlineKeyboardMarkup | None = None):
         """Send message to client if they have telegram_id."""
         if not telegram_id:
@@ -75,20 +88,12 @@ class NotificationService:
                 ],
             ]
         )
-        # Send to all configured admins
-        admin_ids = settings.get_admin_ids()
+        # Send to all configured admins (DB config + bootstrap env admin)
+        admin_ids = self._get_admin_ids()
         for admin_id in admin_ids:
             try:
                 await self.bot.send_message(
                     admin_id, text, reply_markup=keyboard, parse_mode="HTML"
-                )
-            except Exception:
-                pass
-        # Fallback: always send to primary admin if not in set
-        if settings.ADMIN_TELEGRAM_ID and settings.ADMIN_TELEGRAM_ID not in admin_ids:
-            try:
-                await self.bot.send_message(
-                    settings.ADMIN_TELEGRAM_ID, text, reply_markup=keyboard, parse_mode="HTML"
                 )
             except Exception:
                 pass

@@ -35,7 +35,7 @@ CONFIGURABLE_KEYS = {
 
 # Default values sourced from env settings
 _ENV_DEFAULTS = {
-    "admin_ids": lambda: ",".join(str(i) for i in settings.get_admin_ids()),
+    "admin_ids": lambda: str(settings.ADMIN_TELEGRAM_ID) if settings.ADMIN_TELEGRAM_ID else "",
     "bot_username": lambda: settings.BOT_USERNAME,
     "app_name": lambda: settings.APP_NAME,
     "master_name": lambda: settings.MASTER_NAME,
@@ -125,8 +125,12 @@ class ConfigService:
         await self.session.commit()
 
     async def get_admin_ids(self) -> set[int]:
-        """Get all admin IDs from config + env."""
-        ids = settings.get_admin_ids()
+        """Get all admin IDs from DB + bootstrap env admin."""
+        ids: set[int] = set()
+        # Bootstrap admin from .env (always included)
+        if settings.ADMIN_TELEGRAM_ID:
+            ids.add(settings.ADMIN_TELEGRAM_ID)
+        # Additional admins from database (managed via UI)
         db_ids_str = await self.get("admin_ids")
         if db_ids_str:
             for raw in db_ids_str.split(","):

@@ -72,16 +72,16 @@ async def gallery(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("confirm_"))
 async def confirm_booking(callback: CallbackQuery):
     """Admin confirms a booking."""
-    if callback.from_user.id not in settings.get_admin_ids():
-        await callback.answer("Нет доступа", show_alert=True)
-        return
-
-    try:
-        booking_id = int(callback.data.removeprefix("confirm_"))
-    except ValueError:
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
     async with async_session() as session:
+        if not await ConfigService(session).is_admin(callback.from_user.id):
+            await callback.answer("Нет доступа", show_alert=True)
+            return
+
+        try:
+            booking_id = int(callback.data.removeprefix("confirm_"))
+        except ValueError:
+            await callback.answer("Ошибка данных", show_alert=True)
+            return
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CONFIRMED)
         if booking:
@@ -98,16 +98,16 @@ async def confirm_booking(callback: CallbackQuery):
 @router.callback_query(F.data.startswith("reject_"))
 async def reject_booking(callback: CallbackQuery):
     """Admin rejects a booking."""
-    if callback.from_user.id not in settings.get_admin_ids():
-        await callback.answer("Нет доступа", show_alert=True)
-        return
-
-    try:
-        booking_id = int(callback.data.removeprefix("reject_"))
-    except ValueError:
-        await callback.answer("Ошибка данных", show_alert=True)
-        return
     async with async_session() as session:
+        if not await ConfigService(session).is_admin(callback.from_user.id):
+            await callback.answer("Нет доступа", show_alert=True)
+            return
+
+        try:
+            booking_id = int(callback.data.removeprefix("reject_"))
+        except ValueError:
+            await callback.answer("Ошибка данных", show_alert=True)
+            return
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
         if booking:
@@ -143,12 +143,17 @@ async def client_cancel_booking(callback: CallbackQuery):
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
         if booking:
-            # Notify admin
-            await bot.send_message(
-                settings.ADMIN_TELEGRAM_ID,
+            # Notify all admins
+            admin_ids = await ConfigService(session).get_admin_ids()
+            text = (
                 f"❌ Клиент {booking.client.first_name} отменил запись на "
-                f"{booking.date.strftime('%d.%m')} в {booking.time_start.strftime('%H:%M')}",
+                f"{booking.date.strftime('%d.%m')} в {booking.time_start.strftime('%H:%M')}"
             )
+            for admin_id in admin_ids:
+                try:
+                    await bot.send_message(admin_id, text)
+                except Exception:
+                    pass
     await callback.answer("Запись отменена", show_alert=True)
     await callback.message.edit_text(
         "Запись отменена. Надеюсь увидеть вас в другой раз! 💅"
