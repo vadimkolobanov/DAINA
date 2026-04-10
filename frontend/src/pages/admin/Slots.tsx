@@ -291,7 +291,7 @@ export default function Slots() {
                 value={addDuration}
                 min={5}
                 max={480}
-                onChange={(e) => setAddDuration(Math.max(5, Number(e.target.value)))}
+                onChange={(e) => setAddDuration(Number(e.target.value) || 0)}
                 style={{ marginBottom: 0 }}
               />
             </div>
