@@ -1,6 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { useTelegram } from "./hooks/useTelegram";
-import { setAuthContext, getClientByTelegram, ClientItem } from "./api/client";
+import { setAuthContext, getClientByTelegram, getServices, ClientItem } from "./api/client";
 import ServiceSelect from "./pages/client/ServiceSelect";
 import DateSelect from "./pages/client/DateSelect";
 import TimeSelect from "./pages/client/TimeSelect";
@@ -19,7 +19,7 @@ import Settings from "./pages/admin/Settings";
 import AdminServices from "./pages/admin/Services";
 import Gallery from "./pages/client/Gallery";
 import MasterContacts from "./pages/client/MasterContacts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export interface BookingState {
   serviceId: number | null;
@@ -64,6 +64,7 @@ export default function App() {
     }
   }, [user, initData]);
   const { booking, setBooking, clearBooking } = usePersistedBooking();
+  const navigate = useNavigate();
 
   // Client profile check — load client and check if phone exists
   const [clientProfile, setClientProfile] = useState<ClientItem | null>(null);
@@ -87,6 +88,33 @@ export default function App() {
         setProfileLoading(false);
       });
   }, [user, isAdmin]);
+
+  // Auto-select service from waitlist notification URL (?service=123)
+  const autoServiceHandled = useRef(false);
+  useEffect(() => {
+    if (autoServiceHandled.current || isAdmin || profileLoading || needsProfile) return;
+    const params = new URLSearchParams(window.location.search);
+    const serviceParam = params.get("service");
+    if (!serviceParam) return;
+    autoServiceHandled.current = true;
+    const serviceId = parseInt(serviceParam);
+    if (isNaN(serviceId)) return;
+    getServices().then((services) => {
+      const svc = services.find((s) => s.id === serviceId);
+      if (svc) {
+        setBooking({
+          serviceId: svc.id,
+          serviceName: svc.name,
+          servicePrice: svc.price,
+          serviceDuration: svc.duration_minutes,
+          date: "",
+          time: "",
+        });
+        window.history.replaceState({}, "", window.location.pathname);
+        navigate("/date");
+      }
+    }).catch(() => {});
+  }, [isAdmin, profileLoading, needsProfile]);
 
   if (!adminChecked || (!isAdmin && profileLoading)) {
     return <div className="app"><div className="hint">Загрузка...</div></div>;

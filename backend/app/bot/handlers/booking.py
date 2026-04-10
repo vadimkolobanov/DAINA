@@ -84,6 +84,17 @@ async def confirm_booking(callback: CallbackQuery):
             await callback.answer("Ошибка данных", show_alert=True)
             return
         svc = BookingService(session)
+        # Check current status to prevent duplicate processing
+        from sqlalchemy import select as sa_select
+        from app.models.booking import Booking
+        existing = await session.execute(sa_select(Booking).where(Booking.id == booking_id))
+        existing_booking = existing.scalar_one_or_none()
+        if not existing_booking:
+            await callback.answer("Запись не найдена", show_alert=True)
+            return
+        if existing_booking.status != BookingStatus.PENDING:
+            await callback.answer("Запись уже обработана", show_alert=True)
+            return
         booking = await svc.update_status(booking_id, BookingStatus.CONFIRMED)
         if booking:
             config = await ConfigService(session).get_all()
@@ -110,15 +121,39 @@ async def reject_booking(callback: CallbackQuery):
             await callback.answer("Ошибка данных", show_alert=True)
             return
         svc = BookingService(session)
+        # Check current status to prevent duplicate processing
+        existing = await session.execute(sa_select(Booking).where(Booking.id == booking_id))
+        existing_booking = existing.scalar_one_or_none()
+        if not existing_booking:
+            await callback.answer("Запись не найдена", show_alert=True)
+            return
+        if existing_booking.status not in (BookingStatus.PENDING, BookingStatus.CONFIRMED):
+            await callback.answer("Запись уже обработана", show_alert=True)
+            return
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
-        if booking:
-            config = await ConfigService(session).get_all()
-            notifier = NotificationService(bot, config)
-            await notifier.notify_client_rejected(booking)
-            await callback.message.edit_text(
-                callback.message.text + "\n\n❌ <b>Отклонено</b>",
-                parse_mode="HTML",
-            )
+        if not booking:
+            await callback.answer("Запись не найдена", show_alert=True)
+            return
+        # Release slot and trigger waitlist
+        from app.services.slot_service import SlotService
+        slot_svc = SlotService(session)
+        service_id = await slot_svc.release_slot(booking_id)
+        if service_id:
+            from app.services.waitlist_service import WaitlistService
+            wl_svc = WaitlistService(session)
+            entry = await wl_svc.get_next_waiting(service_id)
+            if entry:
+                await wl_svc.mark_notified(entry.id)
+                config_data = await ConfigService(session).get_all()
+                notifier_wl = NotificationService(bot, config_data)
+                await notifier_wl.notify_waitlist_slot_available(entry)
+        config = await ConfigService(session).get_all()
+        notifier = NotificationService(bot, config)
+        await notifier.notify_client_rejected(booking)
+        await callback.message.edit_text(
+            callback.message.text + "\n\n❌ <b>Отклонено</b>",
+            parse_mode="HTML",
+        )
     await callback.answer("Запись отклонена")
 
 
@@ -149,7 +184,16 @@ async def client_cancel_booking(callback: CallbackQuery):
         # Release slot and trigger waitlist
         from app.services.slot_service import SlotService
         slot_svc = SlotService(session)
-        await slot_svc.release_slot(booking_id)
+        service_id = await slot_svc.release_slot(booking_id)
+        if service_id:
+            from app.services.waitlist_service import WaitlistService
+            wl_svc = WaitlistService(session)
+            entry = await wl_svc.get_next_waiting(service_id)
+            if entry:
+                await wl_svc.mark_notified(entry.id)
+                config_data = await ConfigService(session).get_all()
+                notifier = NotificationService(bot, config_data)
+                await notifier.notify_waitlist_slot_available(entry)
         # Notify all admins
         admin_ids = await ConfigService(session).get_admin_ids()
         text = (

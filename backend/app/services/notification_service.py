@@ -210,7 +210,7 @@ class NotificationService:
                 [
                     InlineKeyboardButton(
                         text="✅ Записаться",
-                        web_app=WebAppInfo(url=settings.WEBAPP_URL),
+                        web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}?service={entry.service_id}"),
                     ),
                 ],
                 [

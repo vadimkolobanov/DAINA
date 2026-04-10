@@ -29,11 +29,12 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
   const selectService = (s: ServiceItem) => {
     haptic("medium");
     setBooking({
-      ...booking,
       serviceId: s.id,
       serviceName: s.name,
       servicePrice: s.price,
       serviceDuration: s.duration_minutes,
+      date: "",
+      time: "",
     });
     navigate("/date");
   };
