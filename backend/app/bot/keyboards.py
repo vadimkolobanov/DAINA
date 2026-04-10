@@ -4,26 +4,30 @@ from app.config import settings
 
 
 def get_main_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="💅 Открыть личный кабинет",
-                    web_app=WebAppInfo(url=settings.WEBAPP_URL),
-                )
-            ],
-        ]
-    )
+    url = settings.WEBAPP_URL
+    if url.startswith("https://"):
+        btn = InlineKeyboardButton(
+            text="💅 Открыть личный кабинет",
+            web_app=WebAppInfo(url=url),
+        )
+    else:
+        btn = InlineKeyboardButton(
+            text="💅 Открыть личный кабинет",
+            url=url,
+        )
+    return InlineKeyboardMarkup(inline_keyboard=[[btn]])
 
 
 def get_admin_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="📊 Панель управления",
-                    web_app=WebAppInfo(url=f"{settings.WEBAPP_URL}?startapp=admin"),
-                )
-            ],
-        ]
-    )
+    url = settings.WEBAPP_URL
+    if url.startswith("https://"):
+        btn = InlineKeyboardButton(
+            text="📊 Панель управления",
+            web_app=WebAppInfo(url=f"{url}?startapp=admin"),
+        )
+    else:
+        btn = InlineKeyboardButton(
+            text="📊 Панель управления",
+            url=f"{url}?startapp=admin",
+        )
+    return InlineKeyboardMarkup(inline_keyboard=[[btn]])
