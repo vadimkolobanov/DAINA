@@ -53,6 +53,8 @@ export default function Slots() {
   const [addTime, setAddTime] = useState("18:00");
   const [addDuration, setAddDuration] = useState(60);
   const [addCount, setAddCount] = useState(1);
+  const [addRepeat, setAddRepeat] = useState<"none" | "weekdays" | "weekends" | "daily">("none");
+  const [addRepeatDays, setAddRepeatDays] = useState(7);
   const [addLoading, setAddLoading] = useState(false);
 
   // Manual book form
@@ -107,17 +109,42 @@ export default function Slots() {
 
     setAddLoading(true);
 
+    // Build list of dates
+    const dates: string[] = [];
+    if (addRepeat === "none") {
+      dates.push(selectedDate);
+    } else {
+      const base = new Date(selectedDate + "T12:00:00");
+      for (let d = 0; d < addRepeatDays; d++) {
+        const dt = new Date(base);
+        dt.setDate(base.getDate() + d);
+        const dow = dt.getDay(); // 0=Sun, 6=Sat
+        if (addRepeat === "weekends" && dow !== 0 && dow !== 6) continue;
+        if (addRepeat === "weekdays" && (dow === 0 || dow === 6)) continue;
+        dates.push(formatDate(dt));
+      }
+    }
+
+    if (dates.length === 0) {
+      alert("Нет подходящих дат для выбранного режима повторения.");
+      setAddLoading(false);
+      return;
+    }
+
+    // Build slots for each date
     const slotsToCreate: SlotCreate[] = [];
-    let currentTime = addTime;
-    for (let i = 0; i < addCount; i++) {
-      const endTime = addMinutes(currentTime, addDuration);
-      slotsToCreate.push({
-        service_id: addServiceId,
-        date: selectedDate,
-        time_start: currentTime,
-        time_end: endTime,
-      });
-      currentTime = endTime;
+    for (const date of dates) {
+      let currentTime = addTime;
+      for (let i = 0; i < addCount; i++) {
+        const endTime = addMinutes(currentTime, addDuration);
+        slotsToCreate.push({
+          service_id: addServiceId,
+          date,
+          time_start: currentTime,
+          time_end: endTime,
+        });
+        currentTime = endTime;
+      }
     }
 
     try {
@@ -130,7 +157,7 @@ export default function Slots() {
       loadSlots();
       loadDateSummary();
     } catch {
-      alert("Не удалось создать окошки. Возможно, они уже существуют.");
+      alert("Не удалось создать окошки. Возможно, некоторые уже существуют.");
     }
     setAddLoading(false);
   };
@@ -320,11 +347,55 @@ export default function Slots() {
               />
             </div>
           </div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Повторить</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {([
+                ["none", "Только этот день"],
+                ["daily", "Каждый день"],
+                ["weekdays", "Будни (Пн-Пт)"],
+                ["weekends", "Выходные (Сб-Вс)"],
+              ] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  className={`filter-chip ${addRepeat === val ? "active" : ""}`}
+                  style={{ fontSize: 12, padding: "5px 10px" }}
+                  onClick={() => setAddRepeat(val)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {addRepeat !== "none" && (
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
+                На сколько дней вперёд
+              </label>
+              <div style={{ display: "flex", gap: 6 }}>
+                {[7, 14, 30].map((d) => (
+                  <button
+                    key={d}
+                    className={`filter-chip ${addRepeatDays === d ? "active" : ""}`}
+                    style={{ fontSize: 12, padding: "5px 10px" }}
+                    onClick={() => setAddRepeatDays(d)}
+                  >
+                    {d} дней
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 10 }}>
             {addCount > 1
               ? `${addCount} окошек: ${addTime} — ${addMinutes(addTime, addDuration * addCount)}`
               : `${addTime} — ${addMinutes(addTime, addDuration)}`
             }
+            {addRepeat !== "none" && (
+              <span>
+                {" "}· {addRepeat === "daily" ? "каждый день" : addRepeat === "weekdays" ? "Пн-Пт" : "Сб-Вс"} на {addRepeatDays} дн.
+              </span>
+            )}
           </div>
           <button className="btn btn--primary" onClick={handleAddSlot} disabled={addLoading}>
             {addLoading ? "Создаём..." : `Создать ${addCount > 1 ? `${addCount} окошек` : "окошко"}`}
