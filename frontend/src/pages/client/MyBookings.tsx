@@ -3,10 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useTelegram } from "../../hooks/useTelegram";
 import { getClientBookings, getClientByTelegram, cancelBookingByClient } from "../../api/client";
+import { BookingState } from "../../App";
 
 interface BookingItem {
   id: number;
+  service_id: number;
   service_name: string;
+  service_duration: number;
   date: string;
   time_start: string;
   time_end: string;
@@ -30,7 +33,11 @@ const statusEmoji: Record<string, string> = {
   no_show: "⚠️",
 };
 
-export default function MyBookings() {
+interface Props {
+  setBooking: (b: BookingState) => void;
+}
+
+export default function MyBookings({ setBooking }: Props) {
   const { user, haptic, tg } = useTelegram();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<BookingItem[]>([]);
@@ -120,6 +127,27 @@ export default function MyBookings() {
             })}{" "}
             &bull; {b.time_start} — {b.time_end} &bull; {b.price.toLocaleString()} руб
           </div>
+
+          {b.status === "completed" && (
+            <button
+              className="btn btn--primary"
+              style={{ marginTop: 10, fontSize: 13, padding: 10 }}
+              onClick={() => {
+                haptic("light");
+                setBooking({
+                  serviceId: b.service_id,
+                  serviceName: b.service_name,
+                  servicePrice: b.price,
+                  serviceDuration: b.service_duration,
+                  date: "",
+                  time: "",
+                });
+                navigate("/date");
+              }}
+            >
+              Записаться снова
+            </button>
+          )}
 
           {canCancel(b.status) && confirmCancelId !== b.id && (
             <button

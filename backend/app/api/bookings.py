@@ -288,7 +288,9 @@ async def get_client_bookings(client_id: int, session: AsyncSession = Depends(ge
     return [
         {
             "id": b.id,
+            "service_id": b.service_id,
             "service_name": b.service.name,
+            "service_duration": b.service.duration_minutes,
             "date": b.date.isoformat(),
             "time_start": b.time_start.strftime("%H:%M"),
             "time_end": b.time_end.strftime("%H:%M"),
