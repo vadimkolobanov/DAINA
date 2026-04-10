@@ -11,6 +11,7 @@ from app.dependencies import require_admin
 from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
 from app.models.client_photo import ClientPhoto
+from app.models.manual_slot import ManualSlot
 from app.models.service import Service
 from app.models.waitlist import WaitlistEntry
 
@@ -189,6 +190,14 @@ async def delete_booking(booking_id: int, session: AsyncSession = Depends(get_se
     booking = result.scalar_one_or_none()
     if not booking:
         raise HTTPException(status_code=404, detail="Запись не найдена")
+
+    # Unlink any manual_slot referencing this booking
+    linked_slots = await session.execute(
+        select(ManualSlot).where(ManualSlot.booking_id == booking_id)
+    )
+    for slot in linked_slots.scalars().all():
+        slot.booking_id = None
+
     await session.delete(booking)
     await session.commit()
     return {"ok": True}
@@ -228,11 +237,19 @@ async def delete_client(client_id: int, session: AsyncSession = Depends(get_sess
     for w in waitlist_entries.scalars().all():
         await session.delete(w)
 
-    # Delete client's bookings
+    # Unlink manual_slots from client's bookings, then delete bookings
     bookings = await session.execute(
         select(Booking).where(Booking.client_id == client_id)
     )
-    for b in bookings.scalars().all():
+    booking_list = bookings.scalars().all()
+    booking_ids = [b.id for b in booking_list]
+    if booking_ids:
+        linked_slots = await session.execute(
+            select(ManualSlot).where(ManualSlot.booking_id.in_(booking_ids))
+        )
+        for slot in linked_slots.scalars().all():
+            slot.booking_id = None
+    for b in booking_list:
         await session.delete(b)
 
     await session.delete(client)
