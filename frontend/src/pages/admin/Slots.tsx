@@ -349,9 +349,9 @@ export default function Slots() {
           </div>
           <div style={{ marginBottom: 10 }}>
             <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Повторить</label>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {([
-                ["none", "Только этот день"],
+                ["none", "Этот день"],
                 ["daily", "Каждый день"],
                 ["weekdays", "Будни (Пн-Пт)"],
                 ["weekends", "Выходные (Сб-Вс)"],
@@ -359,7 +359,7 @@ export default function Slots() {
                 <button
                   key={val}
                   className={`filter-chip ${addRepeat === val ? "active" : ""}`}
-                  style={{ fontSize: 12, padding: "5px 10px" }}
+                  style={{ fontSize: 12, padding: "8px 0", textAlign: "center" }}
                   onClick={() => setAddRepeat(val)}
                 >
                   {label}
@@ -372,12 +372,12 @@ export default function Slots() {
               <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
                 На сколько дней вперёд
               </label>
-              <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
                 {[7, 14, 30].map((d) => (
                   <button
                     key={d}
                     className={`filter-chip ${addRepeatDays === d ? "active" : ""}`}
-                    style={{ fontSize: 12, padding: "5px 10px" }}
+                    style={{ fontSize: 12, padding: "8px 0", textAlign: "center" }}
                     onClick={() => setAddRepeatDays(d)}
                   >
                     {d} дней
