@@ -83,18 +83,69 @@ class BookingService:
     async def get_available_dates(
         self, start_date: date, end_date: date, duration_minutes: int
     ) -> list[dict]:
-        """Get date availability info for a range."""
+        """Get date availability info for a range (batch-optimized)."""
+        # Batch-load all data in 3 queries instead of N*3
+        exc_result = await self.session.execute(
+            select(ScheduleException).where(
+                ScheduleException.date.between(start_date, end_date)
+            )
+        )
+        exceptions = {e.date: e for e in exc_result.scalars().all()}
+
+        sched_result = await self.session.execute(
+            select(Schedule).where(Schedule.is_working == True)
+        )
+        schedules = {s.day_of_week: s for s in sched_result.scalars().all()}
+
+        booking_result = await self.session.execute(
+            select(Booking.date, Booking.time_start, Booking.time_end).where(
+                and_(
+                    Booking.date.between(start_date, end_date),
+                    Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+                )
+            )
+        )
+        bookings_by_date: dict[date, list[tuple[time, time]]] = {}
+        for row in booking_result.all():
+            bookings_by_date.setdefault(row.date, []).append((row.time_start, row.time_end))
+
+        # Calculate availability per day using cached data
+        duration = timedelta(minutes=duration_minutes)
+        step = timedelta(minutes=self.slot_interval)
         dates = []
         current = start_date
         while current <= end_date:
-            slots = await self.get_available_slots(current, duration_minutes)
-            dates.append(
-                {
-                    "date": current.isoformat(),
-                    "available": len(slots) > 0,
-                    "slots_count": len(slots),
-                }
-            )
+            exception = exceptions.get(current)
+            if exception and exception.is_day_off:
+                dates.append({"date": current.isoformat(), "available": False, "slots_count": 0})
+                current += timedelta(days=1)
+                continue
+
+            if exception and exception.custom_start and exception.custom_end:
+                work_start = exception.custom_start
+                work_end = exception.custom_end
+            else:
+                schedule = schedules.get(current.weekday())
+                if not schedule:
+                    dates.append({"date": current.isoformat(), "available": False, "slots_count": 0})
+                    current += timedelta(days=1)
+                    continue
+                work_start = schedule.time_start
+                work_end = schedule.time_end
+
+            booked_ranges = bookings_by_date.get(current, [])
+            slot_count = 0
+            cur_dt = datetime.combine(current, work_start)
+            end_dt = datetime.combine(current, work_end)
+            while cur_dt + duration <= end_dt:
+                slot_start = cur_dt.time()
+                slot_end = (cur_dt + duration).time()
+                is_free = all(not (slot_start < be and slot_end > bs) for bs, be in booked_ranges)
+                if is_free:
+                    slot_count += 1
+                cur_dt += step
+
+            dates.append({"date": current.isoformat(), "available": slot_count > 0, "slots_count": slot_count})
             current += timedelta(days=1)
         return dates
 
