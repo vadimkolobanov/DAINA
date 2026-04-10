@@ -51,6 +51,7 @@ export default function Slots() {
   const [showAdd, setShowAdd] = useState(false);
   const [addServiceId, setAddServiceId] = useState<number>(0);
   const [addTime, setAddTime] = useState("18:00");
+  const [addDuration, setAddDuration] = useState(60);
   const [addCount, setAddCount] = useState(1);
 
   // Manual book form
@@ -93,14 +94,12 @@ export default function Slots() {
   };
 
   const handleAddSlot = async () => {
-    if (!addServiceId || !addTime) return;
-    const svc = services.find((s) => s.id === addServiceId);
-    if (!svc) return;
+    if (!addServiceId || !addTime || addDuration < 5) return;
 
     const slotsToCreate: SlotCreate[] = [];
     let currentTime = addTime;
     for (let i = 0; i < addCount; i++) {
-      const endTime = addMinutes(currentTime, svc.duration_minutes);
+      const endTime = addMinutes(currentTime, addDuration);
       slotsToCreate.push({
         service_id: addServiceId,
         date: selectedDate,
@@ -173,8 +172,6 @@ export default function Slots() {
     if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(currentYear + 1); }
     else setCurrentMonth(currentMonth + 1);
   };
-
-  const selectedService = services.find((s) => s.id === addServiceId);
 
   return (
     <div>
@@ -270,7 +267,7 @@ export default function Slots() {
             >
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.duration_minutes} мин)
+                  {s.name}
                 </option>
               ))}
             </select>
@@ -287,7 +284,19 @@ export default function Slots() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Кол-во подряд</label>
+              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Длительность (мин)</label>
+              <input
+                type="number"
+                className="search-input"
+                value={addDuration}
+                min={5}
+                max={480}
+                onChange={(e) => setAddDuration(Math.max(5, Number(e.target.value)))}
+                style={{ marginBottom: 0 }}
+              />
+            </div>
+            <div style={{ width: 70 }}>
+              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Кол-во</label>
               <input
                 type="number"
                 className="search-input"
@@ -299,14 +308,12 @@ export default function Slots() {
               />
             </div>
           </div>
-          {selectedService && (
-            <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 10 }}>
-              {addCount > 1
-                ? `${addCount} окошек: ${addTime} — ${addMinutes(addTime, selectedService.duration_minutes * addCount)}`
-                : `${addTime} — ${addMinutes(addTime, selectedService.duration_minutes)}`
-              }
-            </div>
-          )}
+          <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 10 }}>
+            {addCount > 1
+              ? `${addCount} окошек: ${addTime} — ${addMinutes(addTime, addDuration * addCount)}`
+              : `${addTime} — ${addMinutes(addTime, addDuration)}`
+            }
+          </div>
           <button className="btn btn--primary" onClick={handleAddSlot}>
             Создать {addCount > 1 ? `${addCount} окошек` : "окошко"}
           </button>
