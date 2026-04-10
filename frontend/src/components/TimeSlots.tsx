@@ -27,8 +27,12 @@ function groupByPeriod(slots: TimeSlot[]) {
 export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: Props) {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState(false);
+
+  // Waitlist state — must be declared before any conditional returns
+  const [inWaitlist, setInWaitlist] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -44,21 +48,8 @@ export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: P
       });
   }, [date, serviceId]);
 
-  if (loading) {
-    return <div className="hint">Загружаю доступное время...</div>;
-  }
-
-  if (error) {
-    return <div className="hint">Не удалось загрузить слоты. Попробуйте позже.</div>;
-  }
-
-  // Waitlist state
-  const [inWaitlist, setInWaitlist] = useState(false);
-  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
-  const [waitlistLoading, setWaitlistLoading] = useState(false);
-
   useEffect(() => {
-    if (slots.length === 0 && !loading) {
+    if (slots.length === 0 && !loading && !error) {
       getWaitlistPosition(serviceId)
         .then((data) => {
           setInWaitlist(data.in_waitlist);
