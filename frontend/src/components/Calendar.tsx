@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { DateAvailability, getAvailableDates } from "../api/client";
+import { DateAvailability, getAvailableDates, getWaitlistPosition, joinWaitlist, leaveWaitlist } from "../api/client";
 
 interface Props {
   serviceId: number;
@@ -21,6 +21,21 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
   const [year, setYear] = useState(today.getFullYear());
   const [availability, setAvailability] = useState<Record<string, DateAvailability>>({});
   const [nearestFree, setNearestFree] = useState<string | null>(null);
+  const [hasAnyAvailable, setHasAnyAvailable] = useState(true);
+
+  // Waitlist state
+  const [inWaitlist, setInWaitlist] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
+  useEffect(() => {
+    getWaitlistPosition(serviceId)
+      .then((data) => {
+        setInWaitlist(data.in_waitlist);
+        setWaitlistPosition(data.position);
+      })
+      .catch(() => {});
+  }, [serviceId]);
 
   useEffect(() => {
     const start = new Date(year, month, 1);
@@ -42,6 +57,7 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
       }
       setAvailability(map);
       setNearestFree(nearest);
+      setHasAnyAvailable(nearest !== null);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [month, year, serviceId]);
@@ -149,6 +165,75 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
             day: "numeric",
             month: "long",
           })}
+        </div>
+      )}
+
+      {!hasAnyAvailable && (
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          {inWaitlist ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="dashboard-card" style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                  Вы в очереди ожидания
+                </div>
+                {waitlistPosition && (
+                  <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 12 }}>
+                    Ваша позиция: {waitlistPosition}
+                  </div>
+                )}
+                <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 12 }}>
+                  Когда появится окошко — вы получите уведомление в Telegram
+                </div>
+                <button
+                  className="btn btn--secondary"
+                  onClick={async () => {
+                    setWaitlistLoading(true);
+                    try {
+                      await leaveWaitlist(serviceId);
+                      setInWaitlist(false);
+                      setWaitlistPosition(null);
+                    } catch {}
+                    setWaitlistLoading(false);
+                  }}
+                  disabled={waitlistLoading}
+                  style={{ fontSize: 14 }}
+                >
+                  Отменить ожидание
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="hint" style={{ marginBottom: 12 }}>
+                Нет свободных окошек
+              </div>
+              <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 16, lineHeight: 1.5 }}>
+                Когда мастер откроет новые окошки или освободятся занятые,
+                вы получите уведомление и сможете записаться первыми
+              </div>
+              <button
+                className="btn btn--primary"
+                onClick={async () => {
+                  setWaitlistLoading(true);
+                  try {
+                    const result = await joinWaitlist(serviceId);
+                    setInWaitlist(true);
+                    setWaitlistPosition(result.position);
+                  } catch {}
+                  setWaitlistLoading(false);
+                }}
+                disabled={waitlistLoading}
+              >
+                {waitlistLoading ? "Подождите..." : "Записаться в ожидание"}
+              </button>
+            </motion.div>
+          )}
         </div>
       )}
     </div>
