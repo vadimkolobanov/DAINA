@@ -12,6 +12,7 @@ from app.models.booking import Booking, BookingStatus
 from app.models.client import Client
 from app.models.client_photo import ClientPhoto
 from app.models.service import Service
+from app.models.waitlist import WaitlistEntry
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -219,6 +220,13 @@ async def delete_client(client_id: int, session: AsyncSession = Depends(get_sess
     )
     for p in photos.scalars().all():
         await session.delete(p)
+
+    # Delete client's waitlist entries
+    waitlist_entries = await session.execute(
+        select(WaitlistEntry).where(WaitlistEntry.client_id == client_id)
+    )
+    for w in waitlist_entries.scalars().all():
+        await session.delete(w)
 
     # Delete client's bookings
     bookings = await session.execute(

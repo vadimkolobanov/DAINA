@@ -143,18 +143,24 @@ async def client_cancel_booking(callback: CallbackQuery):
     async with async_session() as session:
         svc = BookingService(session)
         booking = await svc.update_status(booking_id, BookingStatus.CANCELLED)
-        if booking:
-            # Notify all admins
-            admin_ids = await ConfigService(session).get_admin_ids()
-            text = (
-                f"❌ Клиент {booking.client.first_name} отменил запись на "
-                f"{booking.date.strftime('%d.%m')} в {booking.time_start.strftime('%H:%M')}"
-            )
-            for admin_id in admin_ids:
-                try:
-                    await bot.send_message(admin_id, text)
-                except Exception:
-                    pass
+        if not booking:
+            await callback.answer("Запись не найдена или уже отменена", show_alert=True)
+            return
+        # Release slot and trigger waitlist
+        from app.services.slot_service import SlotService
+        slot_svc = SlotService(session)
+        await slot_svc.release_slot(booking_id)
+        # Notify all admins
+        admin_ids = await ConfigService(session).get_admin_ids()
+        text = (
+            f"❌ Клиент {booking.client.first_name} отменил запись на "
+            f"{booking.date.strftime('%d.%m')} в {booking.time_start.strftime('%H:%M')}"
+        )
+        for admin_id in admin_ids:
+            try:
+                await bot.send_message(admin_id, text)
+            except Exception:
+                pass
     await callback.answer("Запись отменена", show_alert=True)
     await callback.message.edit_text(
         "Запись отменена. Надеюсь увидеть вас в другой раз! 💅"

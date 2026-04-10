@@ -32,7 +32,7 @@ function formatDate(d: Date) {
 
 function addMinutes(timeStr: string, minutes: number): string {
   const [h, m] = timeStr.split(":").map(Number);
-  const total = h * 60 + m + minutes;
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
   return `${pad(Math.floor(total / 60))}:${pad(total % 60)}`;
 }
 
@@ -96,6 +96,15 @@ export default function Slots() {
 
   const handleAddSlot = async () => {
     if (!addServiceId || !addTime || addDuration < 5 || addLoading) return;
+
+    // Validate total time doesn't exceed 23:59
+    const [startH, startM] = addTime.split(":").map(Number);
+    const totalEnd = startH * 60 + startM + addDuration * addCount;
+    if (totalEnd > 24 * 60) {
+      alert("Окошки выходят за пределы суток. Уменьшите количество или длительность.");
+      return;
+    }
+
     setAddLoading(true);
 
     const slotsToCreate: SlotCreate[] = [];
@@ -238,7 +247,7 @@ export default function Slots() {
       {/* Selected date header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600 }}>
-          {new Date(selectedDate + "T00:00:00").toLocaleDateString("ru-RU", {
+          {new Date(selectedDate + "T12:00:00").toLocaleDateString("ru-RU", {
             weekday: "short",
             day: "numeric",
             month: "long",

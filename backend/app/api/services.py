@@ -63,6 +63,8 @@ def _validate_service(data: ServiceCreate):
         raise HTTPException(status_code=400, detail="Цена не может быть отрицательной")
     if data.duration_minutes < 5:
         raise HTTPException(status_code=400, detail="Длительность не может быть меньше 5 минут")
+    if data.old_price is not None and data.old_price <= data.price:
+        raise HTTPException(status_code=400, detail="Старая цена должна быть выше текущей")
 
 
 @router.post("", response_model=ServiceResponse)
