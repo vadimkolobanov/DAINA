@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 from aiogram import Bot
+
+logger = logging.getLogger(__name__)
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from app.config import settings
@@ -88,7 +91,7 @@ class NotificationService:
                     admin_id, text, reply_markup=keyboard, parse_mode="HTML"
                 )
             except Exception:
-                pass
+                logger.warning("Failed to send notification to admin %s", admin_id)
 
     # ── Client booking notifications ──
 
@@ -235,7 +238,7 @@ class NotificationService:
             try:
                 await self.bot.send_message(admin_id, text, parse_mode="HTML")
             except Exception:
-                pass
+                logger.warning("Failed to send notification to admin %s", admin_id)
 
     async def send_followup(self, booking: Booking):
         correction_days = 21

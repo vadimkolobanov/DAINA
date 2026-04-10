@@ -160,7 +160,7 @@ async def get_all_bookings(
         try:
             stmt = stmt.where(Booking.status == BookingStatus(status))
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+            raise HTTPException(status_code=400, detail=f"Неверный статус: {status}")
 
     result = await session.execute(stmt)
     bookings = result.scalars().all()
@@ -187,7 +187,7 @@ async def delete_booking(booking_id: int, session: AsyncSession = Depends(get_se
     result = await session.execute(select(Booking).where(Booking.id == booking_id))
     booking = result.scalar_one_or_none()
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise HTTPException(status_code=404, detail="Запись не найдена")
     await session.delete(booking)
     await session.commit()
     return {"ok": True}
@@ -198,7 +198,20 @@ async def delete_client(client_id: int, session: AsyncSession = Depends(get_sess
     result = await session.execute(select(Client).where(Client.id == client_id))
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
+
+    # Check for active bookings
+    active_q = await session.execute(
+        select(func.count(Booking.id)).where(
+            Booking.client_id == client_id,
+            Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+        )
+    )
+    if (active_q.scalar() or 0) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя удалить клиента с активными записями. Сначала отмените или завершите записи."
+        )
 
     # Delete client's photos first
     photos = await session.execute(

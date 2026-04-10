@@ -85,16 +85,21 @@ export default function ClientCard() {
       await updateClient(Number(clientId), { notes });
       setEditingNotes(false);
       setClient((c) => (c ? { ...c, notes } : c));
-    } catch { /* keep editing state on error */ }
+    } catch {
+      alert("Не удалось сохранить заметки");
+    }
   };
 
   const toggleVip = async () => {
     const newVip = !isVip;
+    setIsVip(newVip);
     try {
       await updateClient(Number(clientId), { is_vip: newVip });
-      setIsVip(newVip);
       setClient((c) => (c ? { ...c, is_vip: newVip } : c));
-    } catch { /* revert on error — state unchanged */ }
+    } catch {
+      setIsVip(!newVip);
+      alert("Не удалось изменить VIP-статус");
+    }
   };
 
   const askStatus = (bookingId: number, status: string, label: string) => {
@@ -106,7 +111,9 @@ export default function ClientCard() {
     try {
       await updateBookingStatus(confirmStatus.bookingId, confirmStatus.status);
       loadClient();
-    } catch { /* status unchanged on error */ }
+    } catch {
+      alert("Не удалось изменить статус записи");
+    }
     setConfirmStatus(null);
   };
 
@@ -114,7 +121,9 @@ export default function ClientCard() {
     try {
       await deleteBooking(bookingId);
       loadClient();
-    } catch { /* booking not deleted on error */ }
+    } catch {
+      alert("Не удалось удалить запись");
+    }
   };
 
   const deleteClient = async () => {
@@ -122,7 +131,7 @@ export default function ClientCard() {
       await deleteClientApi(Number(clientId));
       navigate("/clients");
     } catch {
-      // stay on page
+      alert("Не удалось удалить клиента");
     }
   };
 
@@ -141,7 +150,7 @@ export default function ClientCard() {
         style={{ textAlign: "center", paddingTop: 24, paddingBottom: 24 }}
       >
         <div className="client-item__avatar" style={{ width: 64, height: 64, fontSize: 28, margin: "0 auto 12px" }}>
-          {client.first_name.charAt(0).toUpperCase()}
+          {(client.first_name || "?").charAt(0).toUpperCase()}
         </div>
         <h2 style={{ fontSize: 22, marginBottom: 4 }}>{fullName}</h2>
 

@@ -29,7 +29,7 @@ async def join_waitlist(
     session: AsyncSession = Depends(get_session),
 ):
     if not telegram_id:
-        raise HTTPException(status_code=401, detail="Auth required")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
 
     # Find client by telegram_id
     result = await session.execute(
@@ -37,13 +37,13 @@ async def join_waitlist(
     )
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     svc = WaitlistService(session)
     try:
         entry = await svc.add_to_waitlist(client.id, data.service_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Already in waitlist")
+        raise HTTPException(status_code=400, detail="Вы уже в очереди ожидания")
 
     position = await svc.get_waitlist_position(client.id, data.service_id)
     return {"ok": True, "position": position, "waitlist_id": entry.id}
@@ -56,19 +56,19 @@ async def leave_waitlist(
     session: AsyncSession = Depends(get_session),
 ):
     if not telegram_id:
-        raise HTTPException(status_code=401, detail="Auth required")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
 
     result = await session.execute(
         select(Client).where(Client.telegram_id == telegram_id)
     )
     client = result.scalar_one_or_none()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     svc = WaitlistService(session)
     ok = await svc.remove_from_waitlist(client.id, service_id)
     if not ok:
-        raise HTTPException(status_code=404, detail="Not in waitlist")
+        raise HTTPException(status_code=404, detail="Вы не в очереди ожидания")
     return {"ok": True}
 
 
@@ -79,7 +79,7 @@ async def get_position(
     session: AsyncSession = Depends(get_session),
 ):
     if not telegram_id:
-        raise HTTPException(status_code=401, detail="Auth required")
+        raise HTTPException(status_code=401, detail="Необходима авторизация")
 
     result = await session.execute(
         select(Client).where(Client.telegram_id == telegram_id)

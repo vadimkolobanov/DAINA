@@ -80,7 +80,7 @@ async def get_available_slots(
     result = await session.execute(select(Service).where(Service.id == data.service_id))
     service = result.scalar_one_or_none()
     if not service:
-        raise HTTPException(status_code=404, detail="Service not found")
+        raise HTTPException(status_code=404, detail="Услуга не найдена")
 
     svc = SlotService(session)
     slots = await svc.get_available_slots(data.date, data.service_id)
@@ -97,7 +97,7 @@ async def get_available_dates(
     result = await session.execute(select(Service).where(Service.id == service_id))
     service = result.scalar_one_or_none()
     if not service:
-        raise HTTPException(status_code=404, detail="Service not found")
+        raise HTTPException(status_code=404, detail="Услуга не найдена")
 
     svc = SlotService(session)
     dates = await svc.get_available_dates(service_id, start, end)
@@ -109,7 +109,7 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     # Validate client exists
     client_result = await session.execute(select(Client).where(Client.id == data.client_id))
     if not client_result.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="Клиент не найден")
 
     # Check active bookings limit
     from sqlalchemy import func as sqlfunc
@@ -128,25 +128,25 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     result = await session.execute(select(Service).where(Service.id == data.service_id))
     service = result.scalar_one_or_none()
     if not service:
-        raise HTTPException(status_code=404, detail="Service not found")
+        raise HTTPException(status_code=404, detail="Услуга не найдена")
 
     # Validate date is not in the past
     if data.date < date.today():
-        raise HTTPException(status_code=400, detail="Cannot book a date in the past")
+        raise HTTPException(status_code=400, detail="Нельзя записаться на прошедшую дату")
 
     # Validate time format
     try:
         h, m = map(int, data.time.split(":"))
         target_time = time(h, m)
     except (ValueError, IndexError):
-        raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
+        raise HTTPException(status_code=400, detail="Неверный формат времени")
 
     # Validate slot is available
     slot_svc = SlotService(session)
     available_slots = await slot_svc.get_available_slots(data.date, data.service_id)
     matching = [s for s in available_slots if s.time_start == target_time]
     if not matching:
-        raise HTTPException(status_code=400, detail="Time slot not available")
+        raise HTTPException(status_code=400, detail="Это время уже недоступно")
 
     svc = BookingService(session)
     booking = await svc.create_booking(
@@ -176,11 +176,11 @@ async def update_booking_status(
     try:
         booking_status = BookingStatus(status)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+        raise HTTPException(status_code=400, detail=f"Неверный статус: {status}")
     svc = BookingService(session)
     booking = await svc.update_status(booking_id, booking_status)
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise HTTPException(status_code=404, detail="Запись не найдена")
 
     # Release slot if booking is cancelled
     if booking_status == BookingStatus.CANCELLED:
@@ -220,9 +220,9 @@ async def cancel_booking_by_client(
     )
     booking = result.scalar_one_or_none()
     if not booking:
-        raise HTTPException(status_code=404, detail="Booking not found")
+        raise HTTPException(status_code=404, detail="Запись не найдена")
     if booking.client_id != client_id:
-        raise HTTPException(status_code=403, detail="Not your booking")
+        raise HTTPException(status_code=403, detail="Это не ваша запись")
     if booking.status not in (BookingStatus.PENDING, BookingStatus.CONFIRMED):
         raise HTTPException(status_code=400, detail="Эту запись нельзя отменить")
 

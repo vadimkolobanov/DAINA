@@ -17,11 +17,13 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getServices()
       .then(setServices)
-      .catch(() => setError(true));
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, []);
 
   const selectService = (s: ServiceItem) => {
@@ -49,6 +51,14 @@ export default function ServiceSelect({ booking, setBooking }: Props) {
       <p className="page-subtitle">Нажмите на карточку, чтобы продолжить</p>
 
       {error && <div className="hint">Не удалось загрузить услуги. Попробуйте позже.</div>}
+
+      {loading && !error && (
+        <div className="skeleton">
+          <div className="skeleton__block skeleton__block--lg" />
+          <div className="skeleton__block skeleton__block--lg" />
+          <div className="skeleton__block skeleton__block--lg" />
+        </div>
+      )}
 
       {services.map((s, i) => (
         <motion.div

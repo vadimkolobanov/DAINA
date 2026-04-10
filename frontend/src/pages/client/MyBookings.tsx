@@ -86,7 +86,7 @@ export default function MyBookings({ setBooking }: Props) {
         prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
       );
     } catch {
-      // stay as is
+      tg?.showAlert("Не удалось отменить запись. Попробуйте позже.");
     }
     setCancellingId(null);
     setConfirmCancelId(null);

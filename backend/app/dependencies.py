@@ -89,10 +89,10 @@ async def require_admin(
     """
     telegram_id = await get_current_telegram_user(x_telegram_init_data, x_telegram_user_id)
     if not telegram_id:
-        raise HTTPException(status_code=401, detail="Telegram user ID required")
+        raise HTTPException(status_code=401, detail="Необходима авторизация через Telegram")
 
     config_svc = ConfigService(session)
     if not await config_svc.is_admin(telegram_id):
-        raise HTTPException(status_code=403, detail="Admin access denied")
+        raise HTTPException(status_code=403, detail="Нет доступа администратора")
 
     return telegram_id

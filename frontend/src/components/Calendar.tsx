@@ -195,7 +195,9 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
                       await leaveWaitlist(serviceId);
                       setInWaitlist(false);
                       setWaitlistPosition(null);
-                    } catch {}
+                    } catch {
+                      window.Telegram?.WebApp?.showAlert?.("Не удалось отменить ожидание");
+                    }
                     setWaitlistLoading(false);
                   }}
                   disabled={waitlistLoading}
@@ -225,7 +227,9 @@ export default function Calendar({ serviceId, selectedDate, onSelect }: Props) {
                     const result = await joinWaitlist(serviceId);
                     setInWaitlist(true);
                     setWaitlistPosition(result.position);
-                  } catch {}
+                  } catch {
+                    window.Telegram?.WebApp?.showAlert?.("Не удалось встать в очередь");
+                  }
                   setWaitlistLoading(false);
                 }}
                 disabled={waitlistLoading}

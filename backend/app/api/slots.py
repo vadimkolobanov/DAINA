@@ -56,7 +56,7 @@ def _parse_time(value: str) -> time:
         h, m = map(int, value.split(":"))
         return time(h, m)
     except (ValueError, IndexError):
-        raise HTTPException(status_code=400, detail=f"Invalid time format: {value}, expected HH:MM")
+        raise HTTPException(status_code=400, detail=f"Неверный формат времени: {value}")
 
 
 def _slot_response(slot) -> dict:
@@ -86,16 +86,19 @@ async def create_slot(
     admin_id: int = Depends(require_admin),
     session: AsyncSession = Depends(get_session),
 ):
+    from datetime import date as date_type
+    if data.date < date_type.today():
+        raise HTTPException(status_code=400, detail="Нельзя создать окошко на прошедшую дату")
     ts = _parse_time(data.time_start)
     te = _parse_time(data.time_end)
     if ts >= te:
-        raise HTTPException(status_code=400, detail="time_start must be before time_end")
+        raise HTTPException(status_code=400, detail="Время начала должно быть раньше времени окончания")
 
     svc = SlotService(session)
     try:
         slot = await svc.create_slot(data.service_id, data.date, ts, te)
     except Exception:
-        raise HTTPException(status_code=400, detail="Slot already exists or invalid data")
+        raise HTTPException(status_code=400, detail="Окошко уже существует или данные некорректны")
     await _trigger_waitlist(session, data.service_id)
     return _slot_response(slot)
 
@@ -123,7 +126,7 @@ async def create_slots_batch(
     try:
         slots = await svc.create_slots_batch(parsed)
     except Exception:
-        raise HTTPException(status_code=400, detail="Some slots already exist or invalid data")
+        raise HTTPException(status_code=400, detail="Некоторые окошки уже существуют или данные некорректны")
     # Trigger waitlist for each unique service
     notified_services = set()
     for s in slots:
@@ -145,7 +148,7 @@ async def delete_slot(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     if not ok:
-        raise HTTPException(status_code=404, detail="Slot not found")
+        raise HTTPException(status_code=404, detail="Окошко не найдено")
     return {"ok": True}
 
 
@@ -181,7 +184,7 @@ async def manual_book_slot(
     svc = SlotService(session)
     slot = await svc.manual_book_slot(slot_id, data.client_name, data.note)
     if not slot:
-        raise HTTPException(status_code=400, detail="Slot not found or already booked")
+        raise HTTPException(status_code=400, detail="Окошко не найдено или уже занято")
     return _slot_response(slot)
 
 
@@ -194,6 +197,6 @@ async def manual_unbook_slot(
     svc = SlotService(session)
     slot = await svc.manual_unbook_slot(slot_id)
     if not slot:
-        raise HTTPException(status_code=400, detail="Slot not found or not manually booked")
+        raise HTTPException(status_code=400, detail="Окошко не найдено или не является ручной бронью")
     await _trigger_waitlist(session, slot.service_id)
     return _slot_response(slot)

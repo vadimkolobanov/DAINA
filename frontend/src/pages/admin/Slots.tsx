@@ -53,6 +53,7 @@ export default function Slots() {
   const [addTime, setAddTime] = useState("18:00");
   const [addDuration, setAddDuration] = useState(60);
   const [addCount, setAddCount] = useState(1);
+  const [addLoading, setAddLoading] = useState(false);
 
   // Manual book form
   const [manualBookId, setManualBookId] = useState<number | null>(null);
@@ -94,7 +95,8 @@ export default function Slots() {
   };
 
   const handleAddSlot = async () => {
-    if (!addServiceId || !addTime || addDuration < 5) return;
+    if (!addServiceId || !addTime || addDuration < 5 || addLoading) return;
+    setAddLoading(true);
 
     const slotsToCreate: SlotCreate[] = [];
     let currentTime = addTime;
@@ -121,6 +123,7 @@ export default function Slots() {
     } catch {
       alert("Не удалось создать окошки. Возможно, они уже существуют.");
     }
+    setAddLoading(false);
   };
 
   const handleDelete = async (slotId: number) => {
@@ -314,8 +317,8 @@ export default function Slots() {
               : `${addTime} — ${addMinutes(addTime, addDuration)}`
             }
           </div>
-          <button className="btn btn--primary" onClick={handleAddSlot}>
-            Создать {addCount > 1 ? `${addCount} окошек` : "окошко"}
+          <button className="btn btn--primary" onClick={handleAddSlot} disabled={addLoading}>
+            {addLoading ? "Создаём..." : `Создать ${addCount > 1 ? `${addCount} окошек` : "окошко"}`}
           </button>
         </motion.div>
       )}

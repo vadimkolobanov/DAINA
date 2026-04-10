@@ -65,7 +65,10 @@ export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: P
       const result = await joinWaitlist(serviceId);
       setInWaitlist(true);
       setWaitlistPosition(result.position);
-    } catch {}
+    } catch {
+      const tg = window.Telegram?.WebApp;
+      tg?.showAlert?.("Не удалось встать в очередь. Попробуйте позже.");
+    }
     setWaitlistLoading(false);
   };
 
@@ -75,7 +78,10 @@ export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: P
       await leaveWaitlist(serviceId);
       setInWaitlist(false);
       setWaitlistPosition(null);
-    } catch {}
+    } catch {
+      const tg = window.Telegram?.WebApp;
+      tg?.showAlert?.("Не удалось отменить ожидание. Попробуйте позже.");
+    }
     setWaitlistLoading(false);
   };
 
