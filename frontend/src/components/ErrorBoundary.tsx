@@ -25,7 +25,7 @@ export default class ErrorBoundary extends Component<Props, State> {
         <div style={{ padding: 32, textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>😔</div>
           <h2 style={{ fontSize: 18, marginBottom: 8 }}>Что-то пошло не так</h2>
-          <p style={{ fontSize: 14, color: "#9e8a94", marginBottom: 16 }}>
+          <p style={{ fontSize: 14, color: "var(--tg-theme-hint-color)", marginBottom: 16 }}>
             Попробуйте перезагрузить приложение
           </p>
           <button

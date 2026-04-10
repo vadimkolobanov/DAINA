@@ -64,6 +64,10 @@ export function useTelegram() {
   useEffect(() => {
     tg?.ready();
     tg?.expand();
+    // Apply Telegram color scheme class to body
+    if (tg?.colorScheme) {
+      document.body.classList.toggle("dark", tg.colorScheme === "dark");
+    }
   }, [tg]);
 
   const user = tg?.initDataUnsafe?.user;
