@@ -8,6 +8,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from app.config import settings
 from app.models.booking import Booking
 from app.models.client import Client
+from app.models.waitlist import WaitlistEntry
 
 
 def _cabinet_kb(extra_rows: list[list[InlineKeyboardButton]] | None = None) -> InlineKeyboardMarkup:
@@ -188,6 +189,53 @@ class NotificationService:
         elif address:
             text += f"\n\n📍 {address}"
         await self._send_client(booking.client.telegram_id, text, _cabinet_kb())
+
+    # ── Waitlist notifications ──
+
+    async def notify_waitlist_slot_available(self, entry: WaitlistEntry):
+        """Notify client that a slot opened for their waited service."""
+        service = entry.service
+        client = entry.client
+        text = (
+            f"🎉 <b>Появилось окошко!</b>\n\n"
+            f"📋 {service.name}\n\n"
+            f"Вы были в очереди ожидания — теперь можете записаться!\n"
+            f"У вас есть 30 минут чтобы занять место."
+        )
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Записаться",
+                        web_app=WebAppInfo(url=settings.WEBAPP_URL),
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Не сейчас",
+                        callback_data=f"waitlist_decline_{entry.id}",
+                    ),
+                ],
+            ]
+        )
+        await self._send_client(client.telegram_id, text, keyboard)
+
+    async def notify_admin_waitlist_activity(self, entry: WaitlistEntry, action: str):
+        """Notify admin about waitlist activity."""
+        client = entry.client
+        service = entry.service
+        text = (
+            f"📋 <b>Очередь ожидания</b>\n\n"
+            f"👤 {client.first_name} {client.last_name or ''}\n"
+            f"📋 {service.name}\n"
+            f"Действие: {action}"
+        )
+        admin_ids = self._get_admin_ids()
+        for admin_id in admin_ids:
+            try:
+                await self.bot.send_message(admin_id, text, parse_mode="HTML")
+            except Exception:
+                pass
 
     async def send_followup(self, booking: Booking):
         correction_days = 21

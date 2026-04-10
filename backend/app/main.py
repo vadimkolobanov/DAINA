@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import bookings, clients, config, schedule, services, admin, slots
+from app.api import bookings, clients, config, schedule, services, admin, slots, waitlist
 from app.bot.bot import bot, dp
 from app.bot.handlers import start as start_handler
 from app.bot.handlers import booking as booking_handler
@@ -19,7 +19,7 @@ from sqlalchemy import text
 from app.config import settings
 from app.database import engine, Base, async_session
 from app.services.schedule_service import ScheduleService
-from app.tasks.reminders import check_followups, check_reminders
+from app.tasks.reminders import check_followups, check_reminders, expire_waitlist_offers
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
@@ -102,6 +102,7 @@ async def lifespan(app: FastAPI):
     # Schedule reminders
     scheduler.add_job(check_reminders, "interval", minutes=15)
     scheduler.add_job(check_followups, "interval", minutes=30)
+    scheduler.add_job(expire_waitlist_offers, "interval", minutes=5)
     scheduler.start()
 
     yield
@@ -132,6 +133,7 @@ app.include_router(schedule.router)
 app.include_router(admin.router)
 app.include_router(config.router)
 app.include_router(slots.router)
+app.include_router(waitlist.router)
 
 
 @app.get("/api/health")

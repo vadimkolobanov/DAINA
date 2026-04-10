@@ -159,14 +159,18 @@ class SlotService:
         await self.session.refresh(slot)
         return slot
 
-    async def release_slot(self, booking_id: int) -> None:
+    async def release_slot(self, booking_id: int) -> int | None:
+        """Release slot. Returns service_id if released, None otherwise."""
         result = await self.session.execute(
             select(ManualSlot).where(ManualSlot.booking_id == booking_id)
         )
         slot = result.scalar_one_or_none()
         if slot:
+            service_id = slot.service_id
             slot.booking_id = None
             await self.session.commit()
+            return service_id
+        return None
 
     async def manual_book_slot(
         self, slot_id: int, client_name: str, note: str | None = None

@@ -170,6 +170,24 @@ export const deleteBooking = (bookingId: number) =>
 export const deleteClientApi = (clientId: number) =>
   request(`/admin/client/${clientId}`, { method: "DELETE" });
 
+// Waitlist
+export interface WaitlistPosition {
+  in_waitlist: boolean;
+  position: number | null;
+}
+
+export const joinWaitlist = (serviceId: number) =>
+  request<{ ok: boolean; position: number }>("/waitlist", {
+    method: "POST",
+    body: JSON.stringify({ service_id: serviceId }),
+  });
+
+export const leaveWaitlist = (serviceId: number) =>
+  request("/waitlist/" + serviceId, { method: "DELETE" });
+
+export const getWaitlistPosition = (serviceId: number) =>
+  request<WaitlistPosition>(`/waitlist/position/${serviceId}`);
+
 // Slots (admin)
 export interface SlotItem {
   id: number;

@@ -8,6 +8,7 @@ from app.database import async_session
 from app.models.booking import Booking, BookingStatus
 from app.services.config_service import ConfigService
 from app.services.notification_service import NotificationService
+from app.services.waitlist_service import WaitlistService
 
 logger = logging.getLogger(__name__)
 
@@ -102,3 +103,22 @@ async def check_followups():
             await session.commit()
     except Exception:
         logger.exception("Error in check_followups task")
+
+
+async def expire_waitlist_offers():
+    """Expire stale waitlist offers and notify next in line. Run every 5 minutes."""
+    try:
+        async with async_session() as session:
+            wl_svc = WaitlistService(session)
+            service_ids = await wl_svc.expire_stale_offers()
+
+            if service_ids:
+                config = await ConfigService(session).get_all()
+                notifier = NotificationService(bot, config)
+                for service_id in service_ids:
+                    entry = await wl_svc.get_next_waiting(service_id)
+                    if entry:
+                        await wl_svc.mark_notified(entry.id)
+                        await notifier.notify_waitlist_slot_available(entry)
+    except Exception:
+        logger.exception("Error in expire_waitlist_offers task")

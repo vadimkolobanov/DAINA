@@ -15,8 +15,25 @@ from app.models.service import Service
 from app.services.booking_service import BookingService
 from app.services.config_service import ConfigService
 from app.services.slot_service import SlotService
+from app.services.waitlist_service import WaitlistService
 
 logger = logging.getLogger(__name__)
+
+
+async def _trigger_waitlist(session: AsyncSession, service_id: int):
+    """Notify next waitlisted client when a slot becomes available."""
+    try:
+        wl_svc = WaitlistService(session)
+        entry = await wl_svc.get_next_waiting(service_id)
+        if entry:
+            await wl_svc.mark_notified(entry.id)
+            from app.bot.bot import bot
+            config = await ConfigService(session).get_all()
+            from app.services.notification_service import NotificationService
+            notifier = NotificationService(bot, config)
+            await notifier.notify_waitlist_slot_available(entry)
+    except Exception:
+        logger.exception("Failed to trigger waitlist for service %s", service_id)
 
 MAX_ACTIVE_BOOKINGS = 3
 
@@ -168,7 +185,9 @@ async def update_booking_status(
     # Release slot if booking is cancelled
     if booking_status == BookingStatus.CANCELLED:
         slot_svc = SlotService(session)
-        await slot_svc.release_slot(booking_id)
+        service_id = await slot_svc.release_slot(booking_id)
+        if service_id:
+            await _trigger_waitlist(session, service_id)
 
     # Notify client about status change
     try:
@@ -210,9 +229,11 @@ async def cancel_booking_by_client(
     svc = BookingService(session)
     await svc.update_status(booking_id, BookingStatus.CANCELLED)
 
-    # Release slot
+    # Release slot and trigger waitlist
     slot_svc = SlotService(session)
-    await slot_svc.release_slot(booking_id)
+    service_id = await slot_svc.release_slot(booking_id)
+    if service_id:
+        await _trigger_waitlist(session, service_id)
 
     # Notify admin about cancellation
     try:

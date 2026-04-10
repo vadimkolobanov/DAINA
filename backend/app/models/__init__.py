@@ -5,6 +5,7 @@ from app.models.schedule import Schedule, ScheduleException
 from app.models.client_photo import ClientPhoto
 from app.models.app_config import AppConfig
 from app.models.manual_slot import ManualSlot
+from app.models.waitlist import WaitlistEntry
 
 __all__ = [
     "Client",
@@ -15,4 +16,5 @@ __all__ = [
     "ClientPhoto",
     "AppConfig",
     "ManualSlot",
+    "WaitlistEntry",
 ]

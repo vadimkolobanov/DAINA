@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { getAvailableSlots, TimeSlot } from "../api/client";
+import { getAvailableSlots, getWaitlistPosition, joinWaitlist, leaveWaitlist, TimeSlot } from "../api/client";
 
 interface Props {
   date: string;
@@ -52,8 +52,95 @@ export default function TimeSlots({ date, serviceId, selectedTime, onSelect }: P
     return <div className="hint">Не удалось загрузить слоты. Попробуйте позже.</div>;
   }
 
+  // Waitlist state
+  const [inWaitlist, setInWaitlist] = useState(false);
+  const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+
+  useEffect(() => {
+    if (slots.length === 0 && !loading) {
+      getWaitlistPosition(serviceId)
+        .then((data) => {
+          setInWaitlist(data.in_waitlist);
+          setWaitlistPosition(data.position);
+        })
+        .catch(() => {});
+    }
+  }, [slots, loading, serviceId]);
+
+  const handleJoinWaitlist = async () => {
+    setWaitlistLoading(true);
+    try {
+      const result = await joinWaitlist(serviceId);
+      setInWaitlist(true);
+      setWaitlistPosition(result.position);
+    } catch {}
+    setWaitlistLoading(false);
+  };
+
+  const handleLeaveWaitlist = async () => {
+    setWaitlistLoading(true);
+    try {
+      await leaveWaitlist(serviceId);
+      setInWaitlist(false);
+      setWaitlistPosition(null);
+    } catch {}
+    setWaitlistLoading(false);
+  };
+
   if (slots.length === 0) {
-    return <div className="hint">На эту дату нет доступных слотов</div>;
+    return (
+      <div style={{ textAlign: "center", padding: "20px 0" }}>
+        <div className="hint" style={{ marginBottom: 16 }}>
+          На эту дату нет свободных окошек
+        </div>
+        {inWaitlist ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="dashboard-card" style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                Вы в очереди ожидания
+              </div>
+              {waitlistPosition && (
+                <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 12 }}>
+                  Ваша позиция: {waitlistPosition}
+                </div>
+              )}
+              <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 12 }}>
+                Когда появится окошко — вы получите уведомление в Telegram
+              </div>
+              <button
+                className="btn btn--secondary"
+                onClick={handleLeaveWaitlist}
+                disabled={waitlistLoading}
+                style={{ fontSize: 14 }}
+              >
+                Отменить ожидание
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", marginBottom: 16, lineHeight: 1.5 }}>
+              Когда мастер откроет новые окошки или освободятся занятые,
+              вы получите уведомление и сможете записаться первыми
+            </div>
+            <button
+              className="btn btn--primary"
+              onClick={handleJoinWaitlist}
+              disabled={waitlistLoading}
+            >
+              {waitlistLoading ? "Подождите..." : "Записаться в ожидание"}
+            </button>
+          </motion.div>
+        )}
+      </div>
+    );
   }
 
   const groups = groupByPeriod(slots);

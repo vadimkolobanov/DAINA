@@ -9,6 +9,7 @@ from app.services.booking_service import BookingService
 from app.services.client_service import ClientService
 from app.services.config_service import ConfigService
 from app.services.notification_service import NotificationService
+from app.services.waitlist_service import WaitlistService
 
 router = Router()
 
@@ -157,4 +158,34 @@ async def client_cancel_booking(callback: CallbackQuery):
     await callback.answer("Запись отменена", show_alert=True)
     await callback.message.edit_text(
         "Запись отменена. Надеюсь увидеть вас в другой раз! 💅"
+    )
+
+
+@router.callback_query(F.data.startswith("waitlist_decline_"))
+async def waitlist_decline(callback: CallbackQuery):
+    """Client declines waitlist offer."""
+    try:
+        entry_id = int(callback.data.removeprefix("waitlist_decline_"))
+    except ValueError:
+        await callback.answer("Ошибка данных", show_alert=True)
+        return
+
+    async with async_session() as session:
+        wl_svc = WaitlistService(session)
+        entry = await wl_svc.decline_offer(entry_id)
+        if not entry:
+            await callback.answer("Предложение уже недействительно", show_alert=True)
+            return
+
+        # Notify next in line
+        next_entry = await wl_svc.get_next_waiting(entry.service_id)
+        if next_entry:
+            await wl_svc.mark_notified(next_entry.id)
+            config = await ConfigService(session).get_all()
+            notifier = NotificationService(bot, config)
+            await notifier.notify_waitlist_slot_available(next_entry)
+
+    await callback.answer("Понятно! Вы удалены из очереди.", show_alert=True)
+    await callback.message.edit_text(
+        "Вы отказались от предложения. Если передумаете — можете снова встать в очередь через приложение 💅"
     )
