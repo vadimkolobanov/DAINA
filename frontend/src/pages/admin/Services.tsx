@@ -223,6 +223,35 @@ export default function Services() {
               {saving ? "Сохранение..." : "Сохранить"}
             </button>
           </div>
+
+          {editing.id && (
+            confirmDeleteId === editing.id ? (
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button
+                  className="btn btn--secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => setConfirmDeleteId(null)}
+                >
+                  Отмена
+                </button>
+                <button
+                  className="btn"
+                  style={{ flex: 1, background: "var(--danger)", color: "white" }}
+                  onClick={() => handleDelete(editing.id!)}
+                >
+                  Да, удалить
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn"
+                style={{ marginTop: 12, width: "100%", background: "transparent", color: "var(--danger)", border: "1px solid var(--danger)" }}
+                onClick={() => setConfirmDeleteId(editing.id)}
+              >
+                Удалить услугу
+              </button>
+            )
+          )}
         </motion.div>
       ) : (
         <>
