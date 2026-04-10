@@ -323,7 +323,7 @@ export default function Slots() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Длительность (мин)</label>
+              <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Длительность</label>
               <input
                 type="number"
                 className="search-input"
