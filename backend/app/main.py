@@ -78,7 +78,7 @@ async def init_db():
             existing = await session.execute(
                 select(Service).where(Service.sort_order == d["sort_order"])
             )
-            service = existing.scalar_one_or_none()
+            service = existing.scalars().first()
             if service:
                 for key, value in d.items():
                     setattr(service, key, value)
