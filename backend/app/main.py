@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import bookings, clients, config, schedule, services, admin
+from app.api import bookings, clients, config, schedule, services, admin, slots
 from app.bot.bot import bot, dp
 from app.bot.handlers import start as start_handler
 from app.bot.handlers import booking as booking_handler
@@ -131,6 +131,7 @@ app.include_router(clients.router)
 app.include_router(schedule.router)
 app.include_router(admin.router)
 app.include_router(config.router)
+app.include_router(slots.router)
 
 
 @app.get("/api/health")

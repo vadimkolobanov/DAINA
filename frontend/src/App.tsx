@@ -13,6 +13,7 @@ import Clients from "./pages/admin/Clients";
 import ClientCard from "./pages/admin/ClientCard";
 import AllBookings from "./pages/admin/AllBookings";
 import Schedule from "./pages/admin/Schedule";
+import Slots from "./pages/admin/Slots";
 import Statistics from "./pages/admin/Statistics";
 import Settings from "./pages/admin/Settings";
 import AdminServices from "./pages/admin/Services";
@@ -100,6 +101,7 @@ export default function App() {
           <Route path="/client/:clientId" element={<ClientCard />} />
           <Route path="/all-bookings" element={<AllBookings />} />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/slots" element={<Slots />} />
           <Route path="/stats" element={<Statistics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/services" element={<AdminServices />} />

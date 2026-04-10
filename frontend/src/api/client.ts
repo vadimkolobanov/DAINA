@@ -170,6 +170,62 @@ export const deleteBooking = (bookingId: number) =>
 export const deleteClientApi = (clientId: number) =>
   request(`/admin/client/${clientId}`, { method: "DELETE" });
 
+// Slots (admin)
+export interface SlotItem {
+  id: number;
+  service_id: number;
+  service_name: string;
+  date: string;
+  time_start: string;
+  time_end: string;
+  is_booked: boolean;
+  booking_id: number | null;
+  is_manual_booking: boolean;
+  manual_client_name: string | null;
+  manual_note: string | null;
+  client_name: string | null;
+}
+
+export interface SlotCreate {
+  service_id: number;
+  date: string;
+  time_start: string;
+  time_end: string;
+}
+
+export interface SlotDateSummary {
+  date: string;
+  total: number;
+  available: number;
+}
+
+export const getSlotsByDate = (date: string) =>
+  request<SlotItem[]>(`/slots?date=${date}`);
+
+export const getSlotDates = (start: string, end: string) =>
+  request<SlotDateSummary[]>(`/slots/dates?start=${start}&end=${end}`);
+
+export const createSlot = (data: SlotCreate) =>
+  request<SlotItem>("/slots", { method: "POST", body: JSON.stringify(data) });
+
+export const createSlotsBatch = (slots: SlotCreate[]) =>
+  request<SlotItem[]>("/slots/batch", {
+    method: "POST",
+    body: JSON.stringify({ slots }),
+  });
+
+export const deleteSlot = (slotId: number) =>
+  request(`/slots/${slotId}`, { method: "DELETE" });
+
+export const manualBookSlot = (slotId: number, clientName: string, note?: string) =>
+  request<SlotItem>(`/slots/${slotId}/manual-book`, {
+    method: "POST",
+    body: JSON.stringify({ client_name: clientName, note }),
+  });
+
+export const manualUnbookSlot = (slotId: number) =>
+  request<SlotItem>(`/slots/${slotId}/manual-unbook`, { method: "POST" });
+
 // Config
 export interface PublicConfig {
   app_name: string;

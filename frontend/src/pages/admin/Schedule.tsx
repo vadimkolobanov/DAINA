@@ -141,9 +141,9 @@ export default function Schedule() {
           <span className="tab-nav__icon">👥</span>
           Клиенты
         </button>
-        <button className="tab-nav__item active" onClick={() => navigate("/schedule")}>
+        <button className="tab-nav__item active" onClick={() => navigate("/slots")}>
           <span className="tab-nav__icon">📅</span>
-          График
+          Окошки
         </button>
         <button className="tab-nav__item" onClick={() => navigate("/stats")}>
           <span className="tab-nav__icon">📈</span>

@@ -14,20 +14,11 @@ from app.models.client import Client
 from app.models.service import Service
 from app.services.booking_service import BookingService
 from app.services.config_service import ConfigService
+from app.services.slot_service import SlotService
 
 logger = logging.getLogger(__name__)
 
 MAX_ACTIVE_BOOKINGS = 3
-
-
-async def _get_slot_interval(session: AsyncSession) -> int:
-    """Get slot interval from config, default 30 min."""
-    try:
-        config_svc = ConfigService(session)
-        val = await config_svc.get("slot_interval")
-        return max(10, int(val))
-    except (ValueError, TypeError):
-        return 30
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
 
@@ -74,10 +65,9 @@ async def get_available_slots(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    interval = await _get_slot_interval(session)
-    svc = BookingService(session, slot_interval=interval)
-    slots = await svc.get_available_slots(data.date, service.duration_minutes)
-    return [{"time": s.strftime("%H:%M")} for s in slots]
+    svc = SlotService(session)
+    slots = await svc.get_available_slots(data.date, data.service_id)
+    return [{"time": s.time_start.strftime("%H:%M")} for s in slots]
 
 
 @router.get("/available-dates")
@@ -92,9 +82,8 @@ async def get_available_dates(
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    interval = await _get_slot_interval(session)
-    svc = BookingService(session, slot_interval=interval)
-    dates = await svc.get_available_dates(start, end, service.duration_minutes)
+    svc = SlotService(session)
+    dates = await svc.get_available_dates(service_id, start, end)
     return dates
 
 
@@ -135,15 +124,20 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     except (ValueError, IndexError):
         raise HTTPException(status_code=400, detail="Invalid time format, expected HH:MM")
 
-    interval = await _get_slot_interval(session)
-    svc = BookingService(session, slot_interval=interval)
-    slots = await svc.get_available_slots(data.date, service.duration_minutes)
-    if target_time not in slots:
+    # Validate slot is available
+    slot_svc = SlotService(session)
+    available_slots = await slot_svc.get_available_slots(data.date, data.service_id)
+    matching = [s for s in available_slots if s.time_start == target_time]
+    if not matching:
         raise HTTPException(status_code=400, detail="Time slot not available")
 
+    svc = BookingService(session)
     booking = await svc.create_booking(
         data.client_id, data.service_id, data.date, target_time, service.duration_minutes
     )
+
+    # Link booking to slot
+    await slot_svc.book_slot(data.service_id, data.date, target_time, booking.id)
 
     # Notify master about new booking
     try:
@@ -170,6 +164,11 @@ async def update_booking_status(
     booking = await svc.update_status(booking_id, booking_status)
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found")
+
+    # Release slot if booking is cancelled
+    if booking_status == BookingStatus.CANCELLED:
+        slot_svc = SlotService(session)
+        await slot_svc.release_slot(booking_id)
 
     # Notify client about status change
     try:
@@ -210,6 +209,10 @@ async def cancel_booking_by_client(
 
     svc = BookingService(session)
     await svc.update_status(booking_id, BookingStatus.CANCELLED)
+
+    # Release slot
+    slot_svc = SlotService(session)
+    await slot_svc.release_slot(booking_id)
 
     # Notify admin about cancellation
     try:
