@@ -23,16 +23,7 @@ class NotificationService:
         self._config = config or {}
 
     def _get(self, key: str, fallback: str = "") -> str:
-        if self._config.get(key):
-            return self._config[key]
-        env_map = {
-            "studio_address": settings.STUDIO_ADDRESS,
-            "studio_map_url": settings.STUDIO_MAP_URL,
-            "app_name": settings.APP_NAME,
-            "master_name": settings.MASTER_NAME,
-            "currency": "руб",
-        }
-        return env_map.get(key, fallback)
+        return self._config.get(key) or fallback
 
     @property
     def currency(self) -> str:

@@ -135,7 +135,7 @@ app.include_router(config.router)
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": settings.APP_NAME}
+    return {"status": "ok", "app": "DAINA Nail Studio"}
 
 
 # Serve frontend static files (built React app)

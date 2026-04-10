@@ -3,9 +3,9 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from app.bot.keyboards import get_main_keyboard
-from app.config import settings
 from app.database import async_session
 from app.services.client_service import ClientService
+from app.services.config_service import ConfigService
 
 router = Router()
 
@@ -14,6 +14,7 @@ router = Router()
 async def cmd_start(message: Message):
     async with async_session() as session:
         svc = ClientService(session)
+        config_svc = ConfigService(session)
 
         # Check for deeplink referral (e.g., /start ref_abc123)
         args = message.text.split(maxsplit=1)
@@ -48,10 +49,13 @@ async def cmd_start(message: Message):
                 username=message.from_user.username,
             )
 
+        app_name = await config_svc.get("app_name")
+        master_name = await config_svc.get("master_name")
+
     if is_new:
         text = (
-            f"Добро пожаловать в <b>{settings.APP_NAME}</b>! ✨\n\n"
-            f"Я — {settings.MASTER_NAME}, и я рада видеть вас здесь.\n\n"
+            f"Добро пожаловать в <b>{app_name}</b>! ✨\n\n"
+            f"Я — {master_name}, и я рада видеть вас здесь.\n\n"
             f"Здесь вы можете удобно записаться на маникюр, "
             f"просмотреть мои работы и управлять своими записями.\n\n"
             f"Нажмите кнопку ниже, чтобы начать 👇"

@@ -33,30 +33,30 @@ CONFIGURABLE_KEYS = {
     "vip_message",
 }
 
-# Default values sourced from env settings
-_ENV_DEFAULTS = {
+# Default values (used until admin configures via UI)
+_DEFAULTS = {
     "admin_ids": lambda: str(settings.ADMIN_TELEGRAM_ID) if settings.ADMIN_TELEGRAM_ID else "",
-    "bot_username": lambda: settings.BOT_USERNAME,
-    "app_name": lambda: settings.APP_NAME,
-    "master_name": lambda: settings.MASTER_NAME,
-    "master_username": lambda: "",
-    "master_phone": lambda: "",
-    "master_instagram": lambda: "glodia_nails_brest",
-    "studio_address": lambda: settings.STUDIO_ADDRESS,
-    "studio_map_url": lambda: settings.STUDIO_MAP_URL,
-    "correction_days": lambda: str(settings.CORRECTION_DAYS),
-    "reminder_24h": lambda: str(settings.REMINDER_24H).lower(),
-    "reminder_2h": lambda: str(settings.REMINDER_2H).lower(),
-    "followup_enabled": lambda: str(settings.FOLLOWUP_ENABLED).lower(),
-    "slot_interval": lambda: "30",
-    "currency": lambda: "руб",
-    "care_tips": lambda: (
+    "bot_username": "",
+    "app_name": "DAINA Nail Studio",
+    "master_name": "Мастер",
+    "master_username": "",
+    "master_phone": "",
+    "master_instagram": "",
+    "studio_address": "",
+    "studio_map_url": "",
+    "correction_days": "21",
+    "reminder_24h": "true",
+    "reminder_2h": "true",
+    "followup_enabled": "true",
+    "slot_interval": "30",
+    "currency": "руб",
+    "care_tips": (
         "Первые 2-3 часа избегайте контакта с водой\n"
         "Не используйте ацетонсодержащие средства\n"
         "Наносите масло для кутикулы ежедневно\n"
         "Используйте перчатки при уборке и мытье посуды"
     ),
-    "vip_message": lambda: (
+    "vip_message": (
         "Вам присвоен VIP-статус! 💎\n"
         "Теперь вы в числе особенных клиентов.\n"
         "Спасибо за доверие!"
@@ -64,35 +64,36 @@ _ENV_DEFAULTS = {
 }
 
 
+def _default(key: str) -> str:
+    """Resolve default value (callable or plain string)."""
+    val = _DEFAULTS.get(key, "")
+    return val() if callable(val) else val
+
+
 class ConfigService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def get(self, key: str) -> str:
-        """Get config value by key. Falls back to env default."""
+        """Get config value by key. Falls back to default."""
         result = await self.session.execute(
             select(AppConfig).where(AppConfig.key == key)
         )
         config = result.scalar_one_or_none()
         if config is not None:
             return config.value
-        if key in _ENV_DEFAULTS:
-            return _ENV_DEFAULTS[key]()
-        return ""
+        return _default(key)
 
     async def get_all(self) -> dict[str, str]:
         """Get all config values."""
         result = await self.session.execute(select(AppConfig))
         db_configs = {c.key: c.value for c in result.scalars().all()}
-        # Merge with defaults
         merged = {}
         for key in CONFIGURABLE_KEYS:
             if key in db_configs:
                 merged[key] = db_configs[key]
-            elif key in _ENV_DEFAULTS:
-                merged[key] = _ENV_DEFAULTS[key]()
             else:
-                merged[key] = ""
+                merged[key] = _default(key)
         return merged
 
     async def set(self, key: str, value: str) -> None:
