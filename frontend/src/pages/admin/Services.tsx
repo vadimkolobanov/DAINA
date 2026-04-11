@@ -154,14 +154,14 @@ export default function Services() {
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
-                Цена до скидки
+                Была ({currency})
               </label>
               <input
                 className="search-input"
                 type="number"
                 value={editing.old_price}
                 onChange={(e) => setEditing({ ...editing, old_price: e.target.value })}
-                placeholder="Пусто = без скидки"
+                placeholder="Выше текущей"
               />
             </div>
           </div>
