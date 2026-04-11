@@ -325,24 +325,27 @@ export default function Slots() {
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Длительность</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className="search-input"
-                value={addDuration}
-                min={5}
-                max={480}
-                onChange={(e) => setAddDuration(Number(e.target.value) || 0)}
+                value={addDuration || ""}
+                onChange={(e) => setAddDuration(parseInt(e.target.value.replace(/\D/g, "")) || 0)}
                 style={{ marginBottom: 0 }}
               />
             </div>
             <div style={{ width: 70 }}>
               <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Кол-во</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 className="search-input"
-                value={addCount}
-                min={1}
-                max={10}
-                onChange={(e) => setAddCount(Math.max(1, Math.min(10, Number(e.target.value))))}
+                value={addCount || ""}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value.replace(/\D/g, "")) || 0;
+                  setAddCount(Math.max(0, Math.min(10, v)));
+                }}
                 style={{ marginBottom: 0 }}
               />
             </div>

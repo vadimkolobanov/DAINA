@@ -24,7 +24,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       },
     });
     if (!res.ok) {
-      throw new Error(`API error: ${res.status}`);
+      let detail = `Ошибка сервера (${res.status})`;
+      try {
+        const body = await res.json();
+        if (body.detail) detail = body.detail;
+      } catch {}
+      throw new Error(detail);
     }
     return res.json();
   } finally {

@@ -91,8 +91,8 @@ export default function Services() {
       }
       setEditing(null);
       load();
-    } catch {
-      setError("Не удалось сохранить");
+    } catch (e: any) {
+      setError(e?.message || "Не удалось сохранить");
     }
     setSaving(false);
   };
@@ -154,7 +154,7 @@ export default function Services() {
             </div>
             <div style={{ flex: 1 }}>
               <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>
-                Старая цена (скидка)
+                Цена до скидки
               </label>
               <input
                 className="search-input"
