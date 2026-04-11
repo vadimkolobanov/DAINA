@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { getDashboard } from "../../api/client";
+import { getDashboard, getPublicConfig } from "../../api/client";
 import Skeleton from "../../components/Skeleton";
 
 interface DashboardBooking {
@@ -37,6 +37,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [error, setError] = useState(false);
+  const [botLink, setBotLink] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     setError(false);
@@ -44,6 +46,15 @@ export default function Dashboard() {
       .then(setData)
       .catch(() => setError(true));
   }, [selectedDate]);
+
+  useEffect(() => {
+    getPublicConfig().then((cfg) => {
+      if (cfg.bot_username) {
+        const name = cfg.bot_username.replace(/^@/, "");
+        setBotLink(`https://t.me/${name}`);
+      }
+    }).catch(() => {});
+  }, []);
 
   const changeDate = (delta: number) => {
     const d = new Date(selectedDate);
@@ -169,8 +180,24 @@ export default function Dashboard() {
             </motion.div>
           ))}
 
+          {/* Copy bot link */}
+          {botLink && (
+            <button
+              className="btn btn--primary"
+              style={{ marginTop: 16, fontSize: 14 }}
+              onClick={() => {
+                navigator.clipboard.writeText(botLink).then(() => {
+                  setLinkCopied(true);
+                  setTimeout(() => setLinkCopied(false), 2000);
+                });
+              }}
+            >
+              {linkCopied ? "✅ Ссылка скопирована!" : `📋 Скопировать ссылку на бота`}
+            </button>
+          )}
+
           {/* Quick actions */}
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
             <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => navigate("/all-bookings")}>
               Все записи
             </button>
