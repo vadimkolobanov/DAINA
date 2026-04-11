@@ -221,7 +221,7 @@ async def get_all_bookings(
     result = await session.execute(stmt)
     bookings = result.scalars().all()
 
-    return [
+    items = [
         {
             "id": b.id,
             "client_id": b.client.id,
@@ -233,9 +233,38 @@ async def get_all_bookings(
             "time_end": b.time_end.strftime("%H:%M"),
             "status": b.status.value,
             "price": b.service.price,
+            "is_manual": False,
         }
         for b in bookings
     ]
+
+    # Add manual bookings
+    manual_stmt = select(ManualSlot).where(ManualSlot.is_manual_booking == True)
+    if start:
+        manual_stmt = manual_stmt.where(ManualSlot.date >= start)
+    if end:
+        manual_stmt = manual_stmt.where(ManualSlot.date <= end)
+    manual_stmt = manual_stmt.order_by(ManualSlot.date.desc(), ManualSlot.time_start.desc())
+    manual_result = await session.execute(manual_stmt)
+    for slot in manual_result.scalars().all():
+        items.append({
+            "id": f"manual_{slot.id}",
+            "client_id": None,
+            "client_name": slot.manual_client_name or "Личная запись",
+            "client_instagram": None,
+            "service_name": slot.service.name if slot.service else "Все услуги",
+            "date": slot.date.isoformat(),
+            "time_start": slot.time_start.strftime("%H:%M"),
+            "time_end": slot.time_end.strftime("%H:%M"),
+            "status": "confirmed",
+            "price": slot.service.price if slot.service else 0,
+            "is_manual": True,
+            "manual_note": slot.manual_note,
+        })
+
+    # Sort by date desc, time desc
+    items.sort(key=lambda x: (x["date"], x["time_start"]), reverse=True)
+    return items
 
 
 @router.delete("/booking/{booking_id}")

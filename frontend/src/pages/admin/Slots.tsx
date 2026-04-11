@@ -9,6 +9,7 @@ import {
   createSlotsBatch,
   deleteSlot,
   manualBookSlot,
+  updateManualBook,
   manualUnbookSlot,
   SlotItem,
   SlotDateSummary,
@@ -174,15 +175,22 @@ export default function Slots() {
 
   const handleManualBook = async () => {
     if (!manualBookId || !manualName.trim()) return;
+    // Check if this slot is already manually booked (= editing)
+    const existingSlot = slots.find((s) => s.id === manualBookId);
+    const isEdit = existingSlot?.is_manual_booking;
     try {
-      await manualBookSlot(manualBookId, manualName.trim(), manualNote.trim() || undefined);
+      if (isEdit) {
+        await updateManualBook(manualBookId, manualName.trim(), manualNote.trim() || undefined);
+      } else {
+        await manualBookSlot(manualBookId, manualName.trim(), manualNote.trim() || undefined);
+      }
       setManualBookId(null);
       setManualName("");
       setManualNote("");
       loadSlots();
       loadDateSummary();
     } catch {
-      alert("Не удалось занять окошко");
+      alert(isEdit ? "Не удалось обновить запись" : "Не удалось занять окошко");
     }
   };
 
@@ -483,13 +491,26 @@ export default function Slots() {
                   </>
                 )}
                 {slot.is_manual_booking && (
-                  <button
-                    className="filter-chip"
-                    style={{ fontSize: 12, padding: "6px 10px" }}
-                    onClick={() => handleManualUnbook(slot.id)}
-                  >
-                    Освободить
-                  </button>
+                  <>
+                    <button
+                      className="filter-chip"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                      onClick={() => {
+                        setManualBookId(slot.id);
+                        setManualName(slot.manual_client_name || "");
+                        setManualNote(slot.manual_note || "");
+                      }}
+                    >
+                      Изменить
+                    </button>
+                    <button
+                      className="filter-chip"
+                      style={{ fontSize: 12, padding: "6px 10px" }}
+                      onClick={() => handleManualUnbook(slot.id)}
+                    >
+                      Освободить
+                    </button>
+                  </>
                 )}
               </div>
             </div>

@@ -188,6 +188,28 @@ async def manual_book_slot(
     return _slot_response(slot)
 
 
+@router.put("/{slot_id}/manual-book")
+async def update_manual_book(
+    slot_id: int,
+    data: ManualBookRequest,
+    admin_id: int = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """Update client name and note on a manually booked slot."""
+    from app.models.manual_slot import ManualSlot as MS
+    result = await session.execute(
+        select(MS).where(MS.id == slot_id, MS.is_manual_booking == True)
+    )
+    slot = result.scalar_one_or_none()
+    if not slot:
+        raise HTTPException(status_code=400, detail="Ручная бронь не найдена")
+    slot.manual_client_name = data.client_name
+    slot.manual_note = data.note
+    await session.commit()
+    await session.refresh(slot)
+    return _slot_response(slot)
+
+
 @router.post("/{slot_id}/manual-unbook")
 async def manual_unbook_slot(
     slot_id: int,

@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import { getAllBookings } from "../../api/client";
 
 interface BookingItem {
-  id: number;
-  client_id: number;
+  id: number | string;
+  client_id: number | null;
   client_name: string;
   client_instagram: string | null;
   service_name: string;
@@ -14,6 +14,8 @@ interface BookingItem {
   time_end: string;
   status: string;
   price: number;
+  is_manual?: boolean;
+  manual_note?: string;
 }
 
 const statusEmoji: Record<string, string> = {
@@ -81,11 +83,12 @@ export default function AllBookings() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.02 }}
-          onClick={() => navigate(`/client/${b.client_id}`)}
+          onClick={() => b.client_id && navigate(`/client/${b.client_id}`)}
         >
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
             <div>
               <strong>{b.client_name}</strong>
+              {b.is_manual && <span className="badge" style={{ marginLeft: 8, background: "var(--warning)", color: "white" }}>Личная</span>}
               {b.client_instagram && (
                 <span style={{ fontSize: 12, color: "var(--tg-theme-hint-color)", marginLeft: 6 }}>
                   @{b.client_instagram}

@@ -246,6 +246,12 @@ export const manualBookSlot = (slotId: number, clientName: string, note?: string
     body: JSON.stringify({ client_name: clientName, note }),
   });
 
+export const updateManualBook = (slotId: number, clientName: string, note?: string) =>
+  request<SlotItem>(`/slots/${slotId}/manual-book`, {
+    method: "PUT",
+    body: JSON.stringify({ client_name: clientName, note }),
+  });
+
 export const manualUnbookSlot = (slotId: number) =>
   request<SlotItem>(`/slots/${slotId}/manual-unbook`, { method: "POST" });
 
