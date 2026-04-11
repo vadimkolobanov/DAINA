@@ -33,6 +33,8 @@ async def init_db():
         for stmt in [
             "ALTER TABLE services ADD COLUMN IF NOT EXISTS old_price INTEGER",
             "ALTER TABLE clients ALTER COLUMN telegram_id DROP NOT NULL",
+            "ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE",
+            "ALTER TABLE manual_slots ALTER COLUMN service_id DROP NOT NULL",
         ]:
             try:
                 await conn.execute(text(stmt))
@@ -74,17 +76,11 @@ async def init_db():
         },
     ]
     async with async_session() as session:
-        for d in defaults:
-            existing = await session.execute(
-                select(Service).where(Service.sort_order == d["sort_order"])
-            )
-            service = existing.scalars().first()
-            if service:
-                for key, value in d.items():
-                    setattr(service, key, value)
-            else:
+        count = await session.execute(select(func.count(Service.id)))
+        if (count.scalar() or 0) == 0:
+            for d in defaults:
                 session.add(Service(**d))
-        await session.commit()
+            await session.commit()
 
 
 async def start_bot():

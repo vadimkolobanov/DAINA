@@ -49,7 +49,7 @@ export default function Slots() {
 
   // Add slot form
   const [showAdd, setShowAdd] = useState(false);
-  const [addServiceId, setAddServiceId] = useState<number>(0);
+  const [addServiceId, setAddServiceId] = useState<number | null>(0);
   const [addTime, setAddTime] = useState("18:00");
   const [addDuration, setAddDuration] = useState(60);
   const [addCount, setAddCount] = useState(1);
@@ -65,7 +65,7 @@ export default function Slots() {
   useEffect(() => {
     getServices().then((s) => {
       setServices(s);
-      if (s.length > 0 && addServiceId === 0) setAddServiceId(s[0].id);
+      // Keep "Все услуги" (0/null) as default
     });
   }, []);
 
@@ -97,7 +97,7 @@ export default function Slots() {
   };
 
   const handleAddSlot = async () => {
-    if (!addServiceId || !addTime || addDuration < 5 || addLoading) return;
+    if (!addTime || addDuration < 5 || addLoading) return;
 
     // Validate total time doesn't exceed 23:59
     const [startH, startM] = addTime.split(":").map(Number);
@@ -138,7 +138,7 @@ export default function Slots() {
       for (let i = 0; i < addCount; i++) {
         const endTime = addMinutes(currentTime, addDuration);
         slotsToCreate.push({
-          service_id: addServiceId,
+          service_id: addServiceId || null,
           date,
           time_start: currentTime,
           time_end: endTime,
@@ -300,10 +300,11 @@ export default function Slots() {
             <label style={{ fontSize: 13, color: "var(--tg-theme-hint-color)", display: "block", marginBottom: 4 }}>Услуга</label>
             <select
               className="search-input"
-              value={addServiceId}
-              onChange={(e) => setAddServiceId(Number(e.target.value))}
+              value={addServiceId ?? 0}
+              onChange={(e) => setAddServiceId(Number(e.target.value) || null)}
               style={{ marginBottom: 0 }}
             >
+              <option value={0}>Все услуги</option>
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

@@ -24,6 +24,7 @@ class ClientResponse(BaseModel):
     instagram_handle: str | None
     notes: str | None
     is_vip: bool
+    is_banned: bool = False
     visit_count: int
     total_spent: int
     referral_code: str | None
@@ -43,6 +44,7 @@ class ClientUpdate(BaseModel):
     instagram_handle: str | None = None
     notes: str | None = None
     is_vip: bool | None = None
+    is_banned: bool | None = None
 
 
 class ClientDetailResponse(BaseModel):
@@ -55,6 +57,7 @@ class ClientDetailResponse(BaseModel):
     instagram_handle: str | None
     notes: str | None
     is_vip: bool
+    is_banned: bool = False
     visit_count: int
     total_spent: int
     referral_code: str | None

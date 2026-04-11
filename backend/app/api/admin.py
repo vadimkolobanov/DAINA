@@ -96,20 +96,44 @@ async def get_stats(
     total_clients_q = await session.execute(select(func.count(Client.id)))
     total_clients = total_clients_q.scalar() or 0
 
+    # Manual bookings (from manual_slots)
+    manual_count_q = await session.execute(
+        select(func.count(ManualSlot.id)).where(
+            ManualSlot.date >= start,
+            ManualSlot.is_manual_booking == True,
+        )
+    )
+    manual_count = manual_count_q.scalar() or 0
+
+    # Manual revenue
+    manual_revenue_q = await session.execute(
+        select(func.sum(Service.price))
+        .join(ManualSlot, ManualSlot.service_id == Service.id)
+        .where(
+            ManualSlot.date >= start,
+            ManualSlot.is_manual_booking == True,
+        )
+    )
+    manual_revenue = manual_revenue_q.scalar() or 0
+
+    total_with_manual = total + manual_count
+    revenue_with_manual = revenue + manual_revenue
+
     return {
         "period": period,
         "start_date": start.isoformat(),
-        "total_bookings": total,
+        "total_bookings": total_with_manual,
         "pending": pending,
         "confirmed": confirmed,
         "completed": completed,
         "cancelled": cancelled,
         "no_show": no_show,
-        "revenue": revenue,
-        "average_check": revenue // active_count if active_count > 0 else 0,
+        "revenue": revenue_with_manual,
+        "average_check": revenue_with_manual // total_with_manual if total_with_manual > 0 else 0,
         "new_clients": new_clients,
         "total_clients": total_clients,
         "completion_rate": round(completed / total * 100, 1) if total > 0 else 0,
+        "manual_bookings": manual_count,
     }
 
 
@@ -124,25 +148,55 @@ async def get_dashboard(
     svc = BookingService(session)
     bookings = await svc.get_bookings_by_date(day)
 
+    booking_items = [
+        {
+            "id": b.id,
+            "client_id": b.client.id,
+            "client_name": f"{b.client.first_name} {b.client.last_name or ''}".strip(),
+            "client_instagram": b.client.instagram_handle,
+            "client_is_new": b.client.visit_count == 0,
+            "client_telegram_id": b.client.telegram_id,
+            "service_name": b.service.name,
+            "time_start": b.time_start.strftime("%H:%M"),
+            "time_end": b.time_end.strftime("%H:%M"),
+            "status": b.status.value,
+            "price": b.service.price,
+            "is_manual": False,
+        }
+        for b in bookings
+    ]
+
+    # Add manual bookings from manual_slots
+    manual_result = await session.execute(
+        select(ManualSlot).where(
+            ManualSlot.date == day,
+            ManualSlot.is_manual_booking == True,
+        ).order_by(ManualSlot.time_start)
+    )
+    for slot in manual_result.scalars().all():
+        booking_items.append({
+            "id": f"manual_{slot.id}",
+            "client_id": None,
+            "client_name": slot.manual_client_name or "Личная запись",
+            "client_instagram": None,
+            "client_is_new": False,
+            "client_telegram_id": None,
+            "service_name": slot.service.name if slot.service else "Все услуги",
+            "time_start": slot.time_start.strftime("%H:%M"),
+            "time_end": slot.time_end.strftime("%H:%M"),
+            "status": "confirmed",
+            "price": slot.service.price if slot.service else 0,
+            "is_manual": True,
+            "manual_note": slot.manual_note,
+        })
+
+    # Sort all by time
+    booking_items.sort(key=lambda x: x["time_start"])
+
     return {
         "date": day.isoformat(),
-        "bookings_count": len(bookings),
-        "bookings": [
-            {
-                "id": b.id,
-                "client_id": b.client.id,
-                "client_name": f"{b.client.first_name} {b.client.last_name or ''}".strip(),
-                "client_instagram": b.client.instagram_handle,
-                "client_is_new": b.client.visit_count == 0,
-                "client_telegram_id": b.client.telegram_id,
-                "service_name": b.service.name,
-                "time_start": b.time_start.strftime("%H:%M"),
-                "time_end": b.time_end.strftime("%H:%M"),
-                "status": b.status.value,
-                "price": b.service.price,
-            }
-            for b in bookings
-        ],
+        "bookings_count": len(booking_items),
+        "bookings": booking_items,
     }
 
 

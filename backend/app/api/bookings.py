@@ -106,10 +106,13 @@ async def get_available_dates(
 
 @router.post("", response_model=BookingResponse)
 async def create_booking(data: BookingCreate, session: AsyncSession = Depends(get_session)):
-    # Validate client exists
+    # Validate client exists and not banned
     client_result = await session.execute(select(Client).where(Client.id == data.client_id))
-    if not client_result.scalar_one_or_none():
+    client = client_result.scalar_one_or_none()
+    if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    if client.is_banned:
+        raise HTTPException(status_code=403, detail="Доступ ограничен")
 
     # Check active bookings limit
     from sqlalchemy import func as sqlfunc
@@ -130,6 +133,24 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     if not service:
         raise HTTPException(status_code=404, detail="Услуга не найдена")
 
+    # Check per-service weekly limit (max 1 per service per week)
+    from sqlalchemy import func as sqlfunc2
+    week_start = data.date - timedelta(days=7)
+    week_end = data.date + timedelta(days=7)
+    same_service_q = await session.execute(
+        select(sqlfunc2.count(Booking.id)).where(
+            Booking.client_id == data.client_id,
+            Booking.service_id == data.service_id,
+            Booking.date.between(week_start, week_end),
+            Booking.status.in_([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+        )
+    )
+    if (same_service_q.scalar() or 0) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Вы уже записаны на эту услугу на этой неделе"
+        )
+
     # Validate date is not in the past
     if data.date < date.today():
         raise HTTPException(status_code=400, detail="Нельзя записаться на прошедшую дату")
@@ -141,17 +162,17 @@ async def create_booking(data: BookingCreate, session: AsyncSession = Depends(ge
     except (ValueError, IndexError):
         raise HTTPException(status_code=400, detail="Неверный формат времени")
 
-    # Lock the slot row to prevent race condition
-    from sqlalchemy import select as sa_select
+    # Lock the slot row to prevent race condition (match service-specific or universal slots)
+    from sqlalchemy import select as sa_select, or_
     from app.models.manual_slot import ManualSlot
     slot_result = await session.execute(
         sa_select(ManualSlot).where(
-            ManualSlot.service_id == data.service_id,
+            or_(ManualSlot.service_id == data.service_id, ManualSlot.service_id.is_(None)),
             ManualSlot.date == data.date,
             ManualSlot.time_start == target_time,
             ManualSlot.booking_id.is_(None),
             ManualSlot.is_manual_booking == False,
-        ).with_for_update()
+        ).with_for_update().limit(1)
     )
     slot = slot_result.scalar_one_or_none()
     if not slot:

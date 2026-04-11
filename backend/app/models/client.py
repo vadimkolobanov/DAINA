@@ -18,6 +18,7 @@ class Client(Base):
     instagram_handle: Mapped[str | None] = mapped_column(String(100), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_vip: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
     visit_count: Mapped[int] = mapped_column(Integer, default=0)
     total_spent: Mapped[int] = mapped_column(Integer, default=0)  # in rubles
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

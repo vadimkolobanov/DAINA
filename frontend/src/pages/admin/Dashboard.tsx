@@ -5,8 +5,8 @@ import { getDashboard, getPublicConfig } from "../../api/client";
 import Skeleton from "../../components/Skeleton";
 
 interface DashboardBooking {
-  id: number;
-  client_id: number;
+  id: number | string;
+  client_id: number | null;
   client_name: string;
   client_instagram: string | null;
   client_is_new: boolean;
@@ -15,6 +15,8 @@ interface DashboardBooking {
   time_end: string;
   status: string;
   price: number;
+  is_manual?: boolean;
+  manual_note?: string;
 }
 
 interface DashboardData {
@@ -153,7 +155,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              onClick={() => navigate(`/client/${b.client_id}`)}
+              onClick={() => b.client_id && navigate(`/client/${b.client_id}`)}
             >
               <div className="booking-item" style={{ borderBottom: "none", padding: 0 }}>
                 <div className="booking-item__time">{b.time_start}</div>
@@ -161,6 +163,7 @@ export default function Dashboard() {
                   <div className="booking-item__name">
                     {b.client_name}
                     {b.client_is_new && <span className="badge badge--new" style={{ marginLeft: 8 }}>NEW</span>}
+                    {b.is_manual && <span className="badge" style={{ marginLeft: 8, background: "var(--warning)", color: "white" }}>Личная</span>}
                   </div>
                   <div className="booking-item__service">
                     {b.service_name} &bull; {b.time_start}–{b.time_end}

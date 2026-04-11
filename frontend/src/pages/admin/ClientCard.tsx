@@ -54,6 +54,7 @@ export default function ClientCard() {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [isVip, setIsVip] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<{bookingId: number; status: string; label: string} | null>(null);
   const [botUsername, setBotUsername] = useState("DAINANailBot");
@@ -68,6 +69,7 @@ export default function ClientCard() {
         setClient(data);
         setNotes(data.notes || "");
         setIsVip(data.is_vip);
+        setIsBanned(data.is_banned || false);
       })
       .catch(() => setError(true));
   };
@@ -99,6 +101,18 @@ export default function ClientCard() {
     } catch {
       setIsVip(!newVip);
       alert("Не удалось изменить VIP-статус");
+    }
+  };
+
+  const toggleBan = async () => {
+    const newBan = !isBanned;
+    setIsBanned(newBan);
+    try {
+      await updateClient(Number(clientId), { is_banned: newBan });
+      setClient((c) => (c ? { ...c, is_banned: newBan } : c));
+    } catch {
+      setIsBanned(!newBan);
+      alert("Не удалось изменить статус блокировки");
     }
   };
 
@@ -199,6 +213,13 @@ export default function ClientCard() {
             onClick={toggleVip}
           >
             {isVip ? "VIP" : "Сделать VIP"}
+          </button>
+          <button
+            className="filter-chip"
+            style={isBanned ? { background: "var(--danger)", color: "white" } : { color: "var(--danger)" }}
+            onClick={toggleBan}
+          >
+            {isBanned ? "Разблокировать" : "Заблокировать"}
           </button>
         </div>
       </motion.div>

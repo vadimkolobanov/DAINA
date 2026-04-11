@@ -52,6 +52,10 @@ async def cmd_start(message: Message):
         app_name = await config_svc.get("app_name")
         master_name = await config_svc.get("master_name")
 
+    if client.is_banned:
+        await message.answer("Доступ ограничен. Обратитесь к мастеру для уточнения.")
+        return
+
     if is_new:
         text = (
             f"Добро пожаловать в <b>{app_name}</b>! ✨\n\n"

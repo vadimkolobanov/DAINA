@@ -68,11 +68,12 @@ class SlotService:
     async def get_available_slots(
         self, target_date: date, service_id: int
     ) -> list[ManualSlot]:
+        from sqlalchemy import or_
         result = await self.session.execute(
             select(ManualSlot).where(
                 and_(
                     ManualSlot.date == target_date,
-                    ManualSlot.service_id == service_id,
+                    or_(ManualSlot.service_id == service_id, ManualSlot.service_id.is_(None)),
                     ManualSlot.booking_id.is_(None),
                     ManualSlot.is_manual_booking == False,
                 )
@@ -83,11 +84,12 @@ class SlotService:
     async def get_available_dates(
         self, service_id: int, start_date: date, end_date: date
     ) -> list[dict]:
+        from sqlalchemy import or_
         result = await self.session.execute(
             select(ManualSlot.date, func.count(ManualSlot.id))
             .where(
                 and_(
-                    ManualSlot.service_id == service_id,
+                    or_(ManualSlot.service_id == service_id, ManualSlot.service_id.is_(None)),
                     ManualSlot.date.between(start_date, end_date),
                     ManualSlot.booking_id.is_(None),
                     ManualSlot.is_manual_booking == False,

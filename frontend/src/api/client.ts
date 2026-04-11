@@ -210,7 +210,7 @@ export interface SlotItem {
 }
 
 export interface SlotCreate {
-  service_id: number;
+  service_id: number | null;
   date: string;
   time_start: string;
   time_end: string;

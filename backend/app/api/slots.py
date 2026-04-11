@@ -36,7 +36,7 @@ router = APIRouter(prefix="/api/slots", tags=["slots"])
 
 
 class SlotCreate(BaseModel):
-    service_id: int
+    service_id: int | None = None  # None = universal slot (all services)
     date: date
     time_start: str  # "HH:MM"
     time_end: str  # "HH:MM"
@@ -63,7 +63,7 @@ def _slot_response(slot) -> dict:
     return {
         "id": slot.id,
         "service_id": slot.service_id,
-        "service_name": slot.service.name if slot.service else "",
+        "service_name": slot.service.name if slot.service else "Все услуги",
         "date": slot.date.isoformat(),
         "time_start": slot.time_start.strftime("%H:%M"),
         "time_end": slot.time_end.strftime("%H:%M"),

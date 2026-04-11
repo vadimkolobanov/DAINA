@@ -41,6 +41,8 @@ async def join_waitlist(
     client = result.scalar_one_or_none()
     if not client:
         raise HTTPException(status_code=404, detail="Клиент не найден")
+    if client.is_banned:
+        raise HTTPException(status_code=403, detail="Доступ ограничен")
 
     # Check active bookings limit — don't add to waitlist if they can't book anyway
     active_count = await session.execute(

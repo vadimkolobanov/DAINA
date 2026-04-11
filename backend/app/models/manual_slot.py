@@ -25,7 +25,7 @@ class ManualSlot(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    service_id: Mapped[int] = mapped_column(ForeignKey("services.id"), nullable=False)
+    service_id: Mapped[int | None] = mapped_column(ForeignKey("services.id"), nullable=True)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     time_start: Mapped[time] = mapped_column(Time, nullable=False)
     time_end: Mapped[time] = mapped_column(Time, nullable=False)
